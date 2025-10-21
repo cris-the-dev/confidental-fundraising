@@ -31,17 +31,20 @@ export const FhevmProvider = ({ children }: FhevmProviderProps) => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    console.log('🚀 FhevmProvider mounted - starting initialization');
+
     const init = async () => {
       try {
-        console.log('🔄 Initializing FHEVM...');
+        console.log('🔄 Calling initializeFhevm...');
         const fhevmInstance = await initializeFhevm();
         setInstance(fhevmInstance);
-        console.log('✅ FHEVM initialized successfully');
+        console.log('✅ FHEVM instance set in context');
       } catch (err) {
-        console.error('❌ Failed to initialize FHEVM:', err);
+        console.error('❌ Failed to initialize FHEVM in context:', err);
         setError(err as Error);
       } finally {
         setIsLoading(false);
+        console.log('🏁 Initialization process complete');
       }
     };
 
@@ -49,12 +52,12 @@ export const FhevmProvider = ({ children }: FhevmProviderProps) => {
   }, []);
 
   return (
-    <FhevmContext.Provider 
-      value={{ 
-        instance, 
-        isInitialized: instance !== null, 
-        isLoading, 
-        error 
+    <FhevmContext.Provider
+      value={{
+        instance,
+        isInitialized: instance !== null,
+        isLoading,
+        error
       }}
     >
       {children}

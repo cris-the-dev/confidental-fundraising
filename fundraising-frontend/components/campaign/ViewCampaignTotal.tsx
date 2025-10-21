@@ -5,6 +5,7 @@ import { formatEther } from 'viem';
 import { usePrivy } from '@privy-io/react-auth';
 import { useDecrypt } from '../../hooks/useDecrypt';
 import { useCampaigns } from '../../hooks/useCampaigns';
+import { useFhevm } from '../../contexts/FhevmContext';
 
 interface Props {
   campaignId: number;
@@ -13,9 +14,10 @@ interface Props {
 export function ViewCampaignTotal({ campaignId }: Props) {
   const [decryptedTotal, setDecryptedTotal] = useState<string | null>(null);
   const [error, setError] = useState('');
-  
+
   const { decrypt, isDecrypting } = useDecrypt();
   const { getEncryptedTotal } = useCampaigns();
+  const { isInitialized, isLoading: fhevmLoading } = useFhevm();
   const { authenticated } = usePrivy();
 
   const handleDecrypt = async () => {
@@ -24,12 +26,17 @@ export function ViewCampaignTotal({ campaignId }: Props) {
       return;
     }
 
+    if (!isInitialized) {
+      setError('FHEVM is still initializing. Please wait a moment and try again.');
+      return;
+    }
+
     setError('');
-    
+
     try {
       console.log('📊 Fetching encrypted total...');
       const encryptedHandle = await getEncryptedTotal(campaignId);
-      
+
       if (!encryptedHandle || encryptedHandle === 0n) {
         setDecryptedTotal('0.0');
         return;
@@ -37,7 +44,7 @@ export function ViewCampaignTotal({ campaignId }: Props) {
 
       console.log('🔓 Decrypting total...');
       const decrypted = await decrypt(encryptedHandle);
-      
+
       const formattedTotal = formatEther(decrypted);
       setDecryptedTotal(formattedTotal);
       console.log('✅ Decrypted total:', formattedTotal);
@@ -56,10 +63,10 @@ export function ViewCampaignTotal({ campaignId }: Props) {
         {decryptedTotal === null ? (
           <button
             onClick={handleDecrypt}
-            disabled={isDecrypting || !authenticated}
+            disabled={isDecrypting || !authenticated || fhevmLoading || !isInitialized}
             className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
-            {isDecrypting ? '🔓 Decrypting...' : '🔐 View Total'}
+            {isDecrypting ? '🔓 Decrypting...' : fhevmLoading ? '⏳ Initializing...' : '🔐 View Total'}
           </button>
         ) : (
           <button
@@ -70,6 +77,13 @@ export function ViewCampaignTotal({ campaignId }: Props) {
           </button>
         )}
       </div>
+
+      {/* FHEVM Loading State */}
+      {fhevmLoading && (
+        <div className="text-xs text-purple-700 bg-purple-100 p-2 rounded mb-2">
+          ⏳ Initializing encryption system...
+        </div>
+      )}
 
       {error && (
         <div className="text-xs text-red-600 bg-red-50 p-2 rounded mb-2 border border-red-200">
@@ -91,7 +105,7 @@ export function ViewCampaignTotal({ campaignId }: Props) {
         </div>
       )}
 
-      {decryptedTotal === null && (
+      {decryptedTotal === null && !fhevmLoading && (
         <p className="text-xs text-purple-700 mt-2">
           Click to decrypt the encrypted total. You will sign a message to prove ownership.
         </p>

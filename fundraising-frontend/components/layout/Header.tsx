@@ -40,6 +40,15 @@ export default function Header() {
             )}
             
             <div className="flex items-center space-x-4">
+              {/* Show loading state while Privy is initializing */}
+              {!ready && (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin h-5 w-5 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                  <span className="text-sm text-gray-600">Loading...</span>
+                </div>
+              )}
+
+              {/* Show connect button when ready but not authenticated */}
               {ready && !authenticated && (
                 <button
                   onClick={login}
@@ -49,7 +58,8 @@ export default function Header() {
                 </button>
               )}
               
-              {authenticated && user && (
+              {/* Show user info when authenticated */}
+              {ready && authenticated && user && (
                 <div className="flex items-center space-x-3">
                   <div className="bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-mono text-sm">
                     {user.wallet?.address && formatAddress(user.wallet.address)}
