@@ -35,8 +35,6 @@
     "typescript": ">=5.0.0"
   },
   "dependencies": {
-    "fhevm": "0.6.2",
-    "fhevm-contracts": "0.1.0",
     "dotenv": "^16.3.1"
   }
 }

@@ -1,4 +1,4 @@
-import { HardhatUserConfig, vars } from "hardhat/config";
+import { HardhatUserConfig, vars } from "hardhat/config.js";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-verify";
 import "hardhat-deploy";
