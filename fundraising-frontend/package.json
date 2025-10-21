@@ -1,0 +1,35 @@
+{
+  "name": "fundraising-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@privy-io/react-auth": "^1.83.0",
+    "@tanstack/react-query": "^5.59.0",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
+    "fhevmjs": "^0.5.2",
+    "process": "^0.11.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "stream-browserify": "^3.0.0",
+    "viem": "^2.21.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4",
+    "vite": "^4.5.3",
+    "vite-plugin-node-polyfills": "^0.24.0"
+  }
+}
