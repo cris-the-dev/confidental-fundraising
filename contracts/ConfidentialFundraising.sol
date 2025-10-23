@@ -256,9 +256,15 @@ contract ConfidentialFundraising is
     function getMyContribution(
         uint16 campaignId
     ) external view returns (uint8) {
-        uint8 decryptedContribution = decryptedContributions[campaignId][msg.sender];
+        FundraisingStruct.Uint8ResultWithExp memory decryptedWithExp = decryptedContributions[campaignId][msg.sender];
+
+        uint8 decryptedContribution = decryptedWithExp.data;
+        uint256 expTime = decryptedWithExp.exp;
 
         if (decryptedContribution != 0) {
+            if (expTime > block.timestamp) {
+                revert CacheExpired();
+            }
             return decryptedContribution;
         }
 
@@ -285,9 +291,15 @@ contract ConfidentialFundraising is
     }
 
     function getTotalRaised(uint16 campaignId) onlyCampaignOwner(campaignId) external view returns (uint8) {
-        uint8 decryptedTotalRaised = decryptedTotalRaised[campaignId];
+        FundraisingStruct.Uint8ResultWithExp memory decryptedWithExp = decryptedTotalRaised[campaignId];
+
+        uint8 decryptedTotalRaised = decryptedWithExp.data;
+        uint256 expTime = decryptedWithExp.exp;
 
         if (decryptedTotalRaised != 0) {
+            if (expTime > block.timestamp) {
+                revert CacheExpired();
+            }
             return decryptedTotalRaised;
         }
 

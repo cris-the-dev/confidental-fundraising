@@ -4,6 +4,11 @@ pragma solidity ^0.8.24;
 import "@fhevm/solidity/lib/FHE.sol";
 
 library FundraisingStruct {
+    enum DecryptStatus {
+        PROCESSING,
+        DECRYPTED
+    }
+
     struct Campaign {
         address owner;
         string title;
@@ -20,8 +25,8 @@ library FundraisingStruct {
         uint16 campaignId;
     }
 
-    enum DecryptStatus {
-        PROCESSING,
-        DECRYPTED
+    struct Uint8ResultWithExp {
+        uint8 data;
+        uint256 exp; // Data exp time
     }
 }

@@ -21,7 +21,10 @@ contract DecryptionCallbacks is IDecryptionCallbacks, FundraisingStorage {
             cleartexts
         );
         FundraisingStruct.DecryptUserContributionRequest memory request = decryptMyContributionRequest[requestId];
-        decryptedContributions[request.campaignId][request.userAddress] = contributedAmount;
+        decryptedContributions[request.campaignId][request.userAddress] = FundraisingStruct.Uint8ResultWithExp({
+            data: contributedAmount,
+            exp: block.timestamp + cacheTimeout
+        });
 
         delete decryptMyContributionRequest[requestId];
 
@@ -42,7 +45,10 @@ contract DecryptionCallbacks is IDecryptionCallbacks, FundraisingStorage {
         uint8 totalRaised = EncryptedHelper.decodeTotalRaised(
             cleartexts
         );
-        decryptedTotalRaised[campaignId] = totalRaised;
+        decryptedTotalRaised[campaignId] = FundraisingStruct.Uint8ResultWithExp({
+            data: totalRaised,
+            exp: block.timestamp + cacheTimeout
+        });
 
         delete decryptTotalRaisedRequest[requestId];
         decryptTotalRaisedStatus[campaignId] = FundraisingStruct.DecryptStatus.DECRYPTED;
