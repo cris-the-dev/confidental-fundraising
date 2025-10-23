@@ -1,22 +1,131 @@
-// lib/contracts/abi.ts
 export const FUNDRAISING_ABI = [
   {
-    type: "function",
-    name: "createCampaign",
+    inputs: [],
+    name: "ContributionNotFound",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "DataProcessing",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "HandlesAlreadySavedForRequestID",
+    type: "error",
+  },
+  {
+    anonymous: false,
     inputs: [
-      { name: "title", type: "string" },
-      { name: "description", type: "string" },
-      { name: "target", type: "uint64" },
-      { name: "duration", type: "uint256" },
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "campaignId",
+        type: "uint256",
+      },
     ],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "nonpayable",
+    name: "CampaignCancelled",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "campaignId",
+        type: "uint256",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "title",
+        type: "string",
+      },
+      {
+        indexed: false,
+        internalType: "uint64",
+        name: "targetAmount",
+        type: "uint64",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "deadline",
+        type: "uint256",
+      },
+    ],
+    name: "CampaignCreated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "campaignId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "bool",
+        name: "targetReached",
+        type: "bool",
+      },
+    ],
+    name: "CampaignFinalized",
+    type: "event",
   },
   {
     inputs: [
-      { internalType: "uint256", name: "campaignId", type: "uint256" },
-      { internalType: "einput", name: "encAmount", type: "bytes32" },
-      { internalType: "bytes", name: "inputProof", type: "bytes" },
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "cancelCampaign",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "claimTokens",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+      {
+        internalType: "externalEuint8",
+        name: "encryptedAmount",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes",
+        name: "inputProof",
+        type: "bytes",
+      },
     ],
     name: "contribute",
     outputs: [],
@@ -24,126 +133,273 @@ export const FUNDRAISING_ABI = [
     type: "function",
   },
   {
-    type: "function",
-    name: "finalizeCampaign",
-    inputs: [{ name: "campaignId", type: "uint256" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "cancelCampaign",
-    inputs: [{ name: "campaignId", type: "uint256" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "claimTokens",
-    inputs: [{ name: "campaignId", type: "uint256" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "getCampaign",
-    inputs: [{ name: "campaignId", type: "uint256" }],
-    outputs: [
-      { name: "owner", type: "address" },
-      { name: "title", type: "string" },
-      { name: "description", type: "string" },
-      { name: "targetAmount", type: "uint64" },
-      { name: "deadline", type: "uint256" },
-      { name: "finalized", type: "bool" },
-      { name: "cancelled", type: "bool" },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getEncryptedTotal",
-    inputs: [{ name: "campaignId", type: "uint256" }],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getMyContribution",
-    inputs: [{ name: "campaignId", type: "uint256" }],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "campaignCount",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "campaigns",
-    inputs: [{ name: "", type: "uint256" }],
-    outputs: [
-      { name: "owner", type: "address" },
-      { name: "title", type: "string" },
-      { name: "description", type: "string" },
-      { name: "totalRaised", type: "uint256" },
-      { name: "targetAmount", type: "uint64" },
-      { name: "deadline", type: "uint256" },
-      { name: "finalized", type: "bool" },
-      { name: "cancelled", type: "bool" },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "hasClaimed",
+    anonymous: false,
     inputs: [
-      { name: "", type: "uint256" },
-      { name: "", type: "address" },
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "campaignId",
+        type: "uint256",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "contributor",
+        type: "address",
+      },
     ],
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "view",
-  },
-  {
-    type: "event",
-    name: "CampaignCreated",
-    inputs: [
-      { name: "campaignId", type: "uint256", indexed: true },
-      { name: "owner", type: "address", indexed: true },
-      { name: "title", type: "string", indexed: false },
-      { name: "targetAmount", type: "uint64", indexed: false },
-      { name: "deadline", type: "uint256", indexed: false },
-    ],
-  },
-  {
-    type: "event",
     name: "ContributionMade",
+    type: "event",
+  },
+  {
     inputs: [
-      { name: "campaignId", type: "uint256", indexed: true },
-      { name: "contributor", type: "address", indexed: true },
+      {
+        internalType: "string",
+        name: "title",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+      {
+        internalType: "uint8",
+        name: "target",
+        type: "uint8",
+      },
+      {
+        internalType: "uint256",
+        name: "duration",
+        type: "uint256",
+      },
     ],
+    name: "createCampaign",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
-    type: "event",
-    name: "CampaignFinalized",
     inputs: [
-      { name: "campaignId", type: "uint256", indexed: true },
-      { name: "targetReached", type: "bool", indexed: false },
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
     ],
+    name: "finalizeCampaign",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
-    type: "event",
-    name: "CampaignCancelled",
-    inputs: [{ name: "campaignId", type: "uint256", indexed: true }],
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "requestMyContributionDecryption",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
-    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "campaignId",
+        type: "uint256",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "contributor",
+        type: "address",
+      },
+    ],
     name: "TokensClaimed",
-    inputs: [
-      { name: "campaignId", type: "uint256", indexed: true },
-      { name: "contributor", type: "address", indexed: true },
+    type: "event",
+  },
+  {
+    inputs: [],
+    name: "campaignCount",
+    outputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
     ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+    ],
+    name: "campaigns",
+    outputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        internalType: "string",
+        name: "title",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+      {
+        internalType: "euint8",
+        name: "totalRaised",
+        type: "bytes32",
+      },
+      {
+        internalType: "uint8",
+        name: "targetAmount",
+        type: "uint8",
+      },
+      {
+        internalType: "uint256",
+        name: "deadline",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "finalized",
+        type: "bool",
+      },
+      {
+        internalType: "bool",
+        name: "cancelled",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "getCampaign",
+    outputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        internalType: "string",
+        name: "title",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+      {
+        internalType: "uint8",
+        name: "targetAmount",
+        type: "uint8",
+      },
+      {
+        internalType: "uint256",
+        name: "deadline",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "finalized",
+        type: "bool",
+      },
+      {
+        internalType: "bool",
+        name: "cancelled",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "getMyContribution",
+    outputs: [
+      {
+        internalType: "uint8",
+        name: "",
+        type: "uint8",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "hasClaimed",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "protocolId",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "pure",
+    type: "function",
   },
 ] as const;

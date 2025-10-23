@@ -40,6 +40,11 @@ export const useEncrypt = () => {
           CONTRACT_ADDRESS,
           userAddress
         );
+
+        console.log(`CA: ${CONTRACT_ADDRESS}`);
+        console.log(`userAddress: ${userAddress}`);
+        console.log(`value: ${value}`);
+        
         
         // Add value (safe after validation)
         input.add64(Number(value));
