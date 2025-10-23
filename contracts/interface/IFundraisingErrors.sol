@@ -12,6 +12,7 @@ interface IFundraisingErrors {
     error AlreadyFinalized();
     error CampaignNotFinalized();
     error AlreadyClaimed();
-    error NoContributionFound();
     error UnauthorizedAccess();
+    error TotalRaisedNotDecrypted();
+    error MyContributionNotDecrypted();
 }

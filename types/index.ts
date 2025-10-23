@@ -25,6 +25,16 @@ export type { IInputVerifier } from "./@fhevm/solidity/lib/Impl.sol/IInputVerifi
 export { IInputVerifier__factory } from "./factories/@fhevm/solidity/lib/Impl.sol/IInputVerifier__factory";
 export type { ConfidentialFundraising } from "./contracts/ConfidentialFundraising";
 export { ConfidentialFundraising__factory } from "./factories/contracts/ConfidentialFundraising__factory";
+export type { IDecryptionCallbacks } from "./contracts/interface/IDecryptionCallbacks";
+export { IDecryptionCallbacks__factory } from "./factories/contracts/interface/IDecryptionCallbacks__factory";
+export type { IFundraisingErrors } from "./contracts/interface/IFundraisingErrors";
+export { IFundraisingErrors__factory } from "./factories/contracts/interface/IFundraisingErrors__factory";
+export type { IFundraisingEvents } from "./contracts/interface/IFundraisingEvents";
+export { IFundraisingEvents__factory } from "./factories/contracts/interface/IFundraisingEvents__factory";
+export type { DecryptionCallbacks } from "./contracts/interface/impl/DecryptionCallback.sol/DecryptionCallbacks";
+export { DecryptionCallbacks__factory } from "./factories/contracts/interface/impl/DecryptionCallback.sol/DecryptionCallbacks__factory";
+export type { FundraisingStorage } from "./contracts/storage/FundraisingStorage";
+export { FundraisingStorage__factory } from "./factories/contracts/storage/FundraisingStorage__factory";
 export type { EthereumZamaFHEVMConfig } from "./fhevm/config/ZamaFHEVMConfig.sol/EthereumZamaFHEVMConfig";
 export { EthereumZamaFHEVMConfig__factory } from "./factories/fhevm/config/ZamaFHEVMConfig.sol/EthereumZamaFHEVMConfig__factory";
 export type { SepoliaZamaFHEVMConfig } from "./fhevm/config/ZamaFHEVMConfig.sol/SepoliaZamaFHEVMConfig";

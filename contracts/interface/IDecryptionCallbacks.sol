@@ -8,4 +8,10 @@ interface IDecryptionCallbacks {
         bytes memory cleartexts,
         bytes memory decryptionProof
     ) external;
+
+    function callbackDecryptTotalRaised(
+        uint256 requestId,
+        bytes memory cleartexts,
+        bytes memory decryptionProof
+    ) external;
 }

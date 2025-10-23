@@ -13,12 +13,17 @@ import "./storage/FundraisingStorage.sol";
  * @title ConfidentialFundraising
  * @notice A private fundraising platform where contribution amounts remain encrypted
  * @dev Uses FHEVM to keep individual contributions private while tracking totals
- * 
+ *
  * contribution amount and target will be stored as ether, not wei for reducing complexity while crypting
  */
-contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundraisingErrors, FundraisingStorage {
+contract ConfidentialFundraising is
+    SepoliaConfig,
+    IFundraisingEvents,
+    IFundraisingErrors,
+    FundraisingStorage
+{
     using FHE for euint16;
-    using FHE for euint64;
+    using FHE for euint8;
     using FHE for ebool;
 
     modifier onlyCampaignOwner(uint16 campaignId) {
@@ -27,7 +32,7 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
         }
         _;
     }
-    
+
     function createCampaign(
         string calldata title,
         string calldata description,
@@ -37,34 +42,40 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
         require(target > 0, "Target must be greater than 0");
         require(duration > 0, "Duration must be greater than 0");
         require(bytes(title).length > 0, "Title cannot be empty");
-        
+
         uint16 campaignId = campaignCount++;
-        
+
         campaigns[campaignId] = FundraisingStruct.Campaign({
             owner: msg.sender,
             title: title,
             description: description,
-            totalRaised: FHE.asEuint64(0),
+            totalRaised: FHE.asEuint8(0),
             targetAmount: target,
             deadline: block.timestamp + duration,
             finalized: false,
             cancelled: false
         });
-        
+
         FHE.allowThis(campaigns[campaignId].totalRaised);
         FHE.allow(campaigns[campaignId].totalRaised, msg.sender);
-        
-        emit CampaignCreated(campaignId, msg.sender, title, target, block.timestamp + duration);
+
+        emit CampaignCreated(
+            campaignId,
+            msg.sender,
+            title,
+            target,
+            block.timestamp + duration
+        );
         return campaignId;
     }
-    
+
     function contribute(
         uint16 campaignId,
-        externalEuint64 encryptedAmount,
+        externalEuint8 encryptedAmount,
         bytes calldata inputProof
     ) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
-        
+
         if (campaignId > campaignCount) {
             revert CampaignNotExist();
         }
@@ -80,35 +91,39 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
         if (campaign.cancelled) {
             revert AlreadyCancelled();
         }
-        
-        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
-        
-        euint64 existingContribution = encryptedContributions[campaignId][msg.sender];
-        
-        euint64 newContribution;
+
+        euint8 amount = FHE.fromExternal(encryptedAmount, inputProof);
+
+        euint8 existingContribution = encryptedContributions[campaignId][
+            msg.sender
+        ];
+
+        euint8 newContribution;
         if (FHE.isInitialized(existingContribution)) {
             newContribution = FHE.add(existingContribution, amount);
         } else {
             newContribution = amount;
         }
-        
+
         encryptedContributions[campaignId][msg.sender] = newContribution;
-        
+
         FHE.allowThis(newContribution);
         FHE.allow(newContribution, msg.sender);
-        
-        euint64 newTotal = FHE.add(campaign.totalRaised, amount);
+
+        euint8 newTotal = FHE.add(campaign.totalRaised, amount);
         campaign.totalRaised = newTotal;
-        
+
         FHE.allowThis(newTotal);
         FHE.allow(newTotal, campaign.owner);
-        
+
         emit ContributionMade(campaignId, msg.sender);
     }
-    
-    function finalizeCampaign(uint16 campaignId) onlyCampaignOwner(campaignId) external {
+
+    function finalizeCampaign(
+        uint16 campaignId
+    ) external onlyCampaignOwner(campaignId) {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
-        
+
         if (campaignId > campaignCount) {
             revert CampaignNotExist();
         }
@@ -124,14 +139,16 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
         if (campaign.cancelled) {
             revert AlreadyCancelled();
         }
-        
+
         campaign.finalized = true;
         emit CampaignFinalized(campaignId, true);
     }
-    
-    function cancelCampaign(uint16 campaignId) onlyCampaignOwner(campaignId) external {
+
+    function cancelCampaign(
+        uint16 campaignId
+    ) external onlyCampaignOwner(campaignId) {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
-        
+
         if (campaignId > campaignCount) {
             revert CampaignNotExist();
         }
@@ -143,14 +160,14 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
         if (campaign.cancelled) {
             revert AlreadyCancelled();
         }
-        
+
         campaign.cancelled = true;
         emit CampaignCancelled(campaignId);
     }
-    
+
     function claimTokens(uint16 campaignId) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
-        
+
         if (campaignId > campaignCount) {
             revert CampaignNotExist();
         }
@@ -162,39 +179,47 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
         if (campaign.cancelled) {
             revert AlreadyCancelled();
         }
-        
+
         if (hasClaimed[campaignId][msg.sender]) {
             revert AlreadyClaimed();
         }
-        
-        euint64 userContribution = encryptedContributions[campaignId][msg.sender];
-        
+
+        euint8 userContribution = encryptedContributions[campaignId][
+            msg.sender
+        ];
+
         if (!FHE.isInitialized(userContribution)) {
-            revert NoContributionFound();
+            revert ContributionNotFound();
         }
 
         if (!FHE.isSenderAllowed(userContribution)) {
             revert UnauthorizedAccess();
         }
-        
+
         hasClaimed[campaignId][msg.sender] = true;
         emit TokensClaimed(campaignId, msg.sender);
     }
-    
-    function getCampaign(uint16 campaignId) external view returns (
-        address owner,
-        string memory title,
-        string memory description,
-        uint64 targetAmount,
-        uint256 deadline,
-        bool finalized,
-        bool cancelled
-    ) {
+
+    function getCampaign(
+        uint16 campaignId
+    )
+        external
+        view
+        returns (
+            address owner,
+            string memory title,
+            string memory description,
+            uint8 targetAmount,
+            uint256 deadline,
+            bool finalized,
+            bool cancelled
+        )
+    {
         if (campaignId > campaignCount) {
             revert CampaignNotExist();
         }
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
-        
+
         return (
             campaign.owner,
             campaign.title,
@@ -208,20 +233,30 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
 
     function requestMyContributionDecryption(uint16 campaignId) public {
         bytes32[] memory handles = new bytes32[](1);
-        handles[0] = FHE.toBytes32(encryptedContributions[campaignId][msg.sender]);
+        handles[0] = FHE.toBytes32(
+            encryptedContributions[campaignId][msg.sender]
+        );
 
-        uint256 requestId = FHE.requestDecryption(handles, IDecryptionCallbacks.callbackDecryptMyContribution.selector);
+        uint256 requestId = FHE.requestDecryption(
+            handles,
+            IDecryptionCallbacks.callbackDecryptMyContribution.selector
+        );
 
-        decryptMyContributionRequest[requestId] = FundraisingStruct.DecryptUserContributionRequest({
-            userAddress: msg.sender,
-            campaignId: campaignId
-        });
+        decryptMyContributionRequest[requestId] = FundraisingStruct
+            .DecryptUserContributionRequest({
+                userAddress: msg.sender,
+                campaignId: campaignId
+            });
 
-        decryptMyContributionStatus[campaignId][msg.sender] = FundraisingStruct.DecryptStatus.PROCESSING;
+        decryptMyContributionStatus[campaignId][msg.sender] = FundraisingStruct
+            .DecryptStatus
+            .PROCESSING;
     }
 
-    function getMyContribution(uint16 campaignId) external view returns(uint64) {
-        uint64 decryptedContribution = decryptedContributions[campaignId][msg.sender];
+    function getMyContribution(
+        uint16 campaignId
+    ) external view returns (uint8) {
+        uint8 decryptedContribution = decryptedContributions[campaignId][msg.sender];
 
         if (decryptedContribution != 0) {
             return decryptedContribution;
@@ -231,6 +266,35 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
             revert DataProcessing();
         }
 
-        revert ContributionNotFound();
+        revert MyContributionNotDecrypted();
+    }
+
+    function requestTotalRaisedDecryption(uint16 campaignId) onlyCampaignOwner(campaignId) public {
+        FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
+
+        bytes32[] memory handles = new bytes32[](1);
+        handles[0] = FHE.toBytes32(campaign.totalRaised);
+
+        uint256 requestId = FHE.requestDecryption(
+            handles,
+            IDecryptionCallbacks.callbackDecryptTotalRaised.selector
+        );
+
+        decryptTotalRaisedRequest[requestId] = campaignId;
+        decryptTotalRaisedStatus[campaignId] = FundraisingStruct.DecryptStatus.PROCESSING;
+    }
+
+    function getTotalRaised(uint16 campaignId) onlyCampaignOwner(campaignId) external view returns (uint8) {
+        uint8 decryptedTotalRaised = decryptedTotalRaised[campaignId];
+
+        if (decryptedTotalRaised != 0) {
+            return decryptedTotalRaised;
+        }
+
+        if (decryptTotalRaisedStatus[campaignId] == FundraisingStruct.DecryptStatus.PROCESSING) {
+            revert DataProcessing();
+        }
+
+        revert TotalRaisedNotDecrypted();
     }
 }

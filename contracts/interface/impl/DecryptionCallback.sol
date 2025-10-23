@@ -8,8 +8,7 @@ import "../../core/EncryptedHelper.sol";
 import "../../core/FundraisingStruct.sol";
 import "../../storage/FundraisingStorage.sol";
 
-contract DecryptionCallbacks is IDecryptionCallbacks, FundraisingStorage  {
-    using FHE for euint64;
+contract DecryptionCallbacks is IDecryptionCallbacks, FundraisingStorage {
 
     function callbackDecryptMyContribution(
         uint256 requestId,
@@ -18,12 +17,34 @@ contract DecryptionCallbacks is IDecryptionCallbacks, FundraisingStorage  {
     ) external override {
         FHE.checkSignatures(requestId, cleartexts, decryptionProof);
 
-        (uint8 contributedAmount) = EncryptedHelper.decodeUserContribution(cleartexts);
+        uint8 contributedAmount = EncryptedHelper.decodeUserContribution(
+            cleartexts
+        );
         FundraisingStruct.DecryptUserContributionRequest memory request = decryptMyContributionRequest[requestId];
         decryptedContributions[request.campaignId][request.userAddress] = contributedAmount;
 
         delete decryptMyContributionRequest[requestId];
 
-        decryptMyContributionStatus[request.campaignId][msg.sender] = FundraisingStruct.DecryptStatus.DECRYPTED;
+        decryptMyContributionStatus[request.campaignId][
+            msg.sender
+        ] = FundraisingStruct.DecryptStatus.DECRYPTED;
+    }
+
+    function callbackDecryptTotalRaised(
+        uint256 requestId,
+        bytes memory cleartexts,
+        bytes memory decryptionProof
+    ) external override {
+        FHE.checkSignatures(requestId, cleartexts, decryptionProof);
+
+        uint16 campaignId = decryptTotalRaisedRequest[requestId];
+
+        uint8 totalRaised = EncryptedHelper.decodeTotalRaised(
+            cleartexts
+        );
+        decryptedTotalRaised[campaignId] = totalRaised;
+
+        delete decryptTotalRaisedRequest[requestId];
+        decryptTotalRaisedStatus[campaignId] = FundraisingStruct.DecryptStatus.DECRYPTED;
     }
 }

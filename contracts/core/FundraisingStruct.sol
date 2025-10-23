@@ -8,8 +8,8 @@ library FundraisingStruct {
         address owner;
         string title;
         string description;
-        euint64 totalRaised;
-        uint64 targetAmount;
+        euint8 totalRaised;
+        uint8 targetAmount;
         uint256 deadline;
         bool finalized;
         bool cancelled;

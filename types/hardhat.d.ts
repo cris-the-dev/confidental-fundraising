@@ -50,6 +50,26 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ConfidentialFundraising__factory>;
     getContractFactory(
+      name: "IDecryptionCallbacks",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IDecryptionCallbacks__factory>;
+    getContractFactory(
+      name: "IFundraisingErrors",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IFundraisingErrors__factory>;
+    getContractFactory(
+      name: "IFundraisingEvents",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IFundraisingEvents__factory>;
+    getContractFactory(
+      name: "DecryptionCallbacks",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.DecryptionCallbacks__factory>;
+    getContractFactory(
+      name: "FundraisingStorage",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.FundraisingStorage__factory>;
+    getContractFactory(
       name: "EthereumZamaFHEVMConfig",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.EthereumZamaFHEVMConfig__factory>;
@@ -112,6 +132,31 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.ConfidentialFundraising>;
     getContractAt(
+      name: "IDecryptionCallbacks",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IDecryptionCallbacks>;
+    getContractAt(
+      name: "IFundraisingErrors",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IFundraisingErrors>;
+    getContractAt(
+      name: "IFundraisingEvents",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IFundraisingEvents>;
+    getContractAt(
+      name: "DecryptionCallbacks",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.DecryptionCallbacks>;
+    getContractAt(
+      name: "FundraisingStorage",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.FundraisingStorage>;
+    getContractAt(
       name: "EthereumZamaFHEVMConfig",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -169,6 +214,26 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ConfidentialFundraising>;
     deployContract(
+      name: "IDecryptionCallbacks",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IDecryptionCallbacks>;
+    deployContract(
+      name: "IFundraisingErrors",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IFundraisingErrors>;
+    deployContract(
+      name: "IFundraisingEvents",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IFundraisingEvents>;
+    deployContract(
+      name: "DecryptionCallbacks",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.DecryptionCallbacks>;
+    deployContract(
+      name: "FundraisingStorage",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FundraisingStorage>;
+    deployContract(
       name: "EthereumZamaFHEVMConfig",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.EthereumZamaFHEVMConfig>;
@@ -230,6 +295,31 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ConfidentialFundraising>;
+    deployContract(
+      name: "IDecryptionCallbacks",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IDecryptionCallbacks>;
+    deployContract(
+      name: "IFundraisingErrors",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IFundraisingErrors>;
+    deployContract(
+      name: "IFundraisingEvents",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IFundraisingEvents>;
+    deployContract(
+      name: "DecryptionCallbacks",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.DecryptionCallbacks>;
+    deployContract(
+      name: "FundraisingStorage",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FundraisingStorage>;
     deployContract(
       name: "EthereumZamaFHEVMConfig",
       args: any[],

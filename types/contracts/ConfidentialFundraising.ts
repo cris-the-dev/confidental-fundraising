@@ -34,10 +34,12 @@ export interface ConfidentialFundraisingInterface extends Interface {
       | "createCampaign"
       | "finalizeCampaign"
       | "getCampaign"
-      | "getEncryptedTotal"
       | "getMyContribution"
+      | "getTotalRaised"
       | "hasClaimed"
       | "protocolId"
+      | "requestMyContributionDecryption"
+      | "requestTotalRaisedDecryption"
   ): FunctionFragment;
 
   getEvent(
@@ -82,11 +84,11 @@ export interface ConfidentialFundraisingInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getEncryptedTotal",
+    functionFragment: "getMyContribution",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getMyContribution",
+    functionFragment: "getTotalRaised",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -96,6 +98,14 @@ export interface ConfidentialFundraisingInterface extends Interface {
   encodeFunctionData(
     functionFragment: "protocolId",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "requestMyContributionDecryption",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "requestTotalRaisedDecryption",
+    values: [BigNumberish]
   ): string;
 
   decodeFunctionResult(
@@ -125,15 +135,23 @@ export interface ConfidentialFundraisingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getEncryptedTotal",
+    functionFragment: "getMyContribution",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getMyContribution",
+    functionFragment: "getTotalRaised",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "hasClaimed", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "protocolId", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "requestMyContributionDecryption",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "requestTotalRaisedDecryption",
+    data: BytesLike
+  ): Result;
 }
 
 export namespace CampaignCancelledEvent {
@@ -332,15 +350,15 @@ export interface ConfidentialFundraising extends BaseContract {
     "view"
   >;
 
-  getEncryptedTotal: TypedContractMethod<
+  getMyContribution: TypedContractMethod<
     [campaignId: BigNumberish],
-    [string],
+    [bigint],
     "view"
   >;
 
-  getMyContribution: TypedContractMethod<
+  getTotalRaised: TypedContractMethod<
     [campaignId: BigNumberish],
-    [string],
+    [bigint],
     "view"
   >;
 
@@ -351,6 +369,18 @@ export interface ConfidentialFundraising extends BaseContract {
   >;
 
   protocolId: TypedContractMethod<[], [bigint], "view">;
+
+  requestMyContributionDecryption: TypedContractMethod<
+    [campaignId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
+  requestTotalRaisedDecryption: TypedContractMethod<
+    [campaignId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -427,11 +457,11 @@ export interface ConfidentialFundraising extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "getEncryptedTotal"
-  ): TypedContractMethod<[campaignId: BigNumberish], [string], "view">;
-  getFunction(
     nameOrSignature: "getMyContribution"
-  ): TypedContractMethod<[campaignId: BigNumberish], [string], "view">;
+  ): TypedContractMethod<[campaignId: BigNumberish], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getTotalRaised"
+  ): TypedContractMethod<[campaignId: BigNumberish], [bigint], "view">;
   getFunction(
     nameOrSignature: "hasClaimed"
   ): TypedContractMethod<
@@ -442,6 +472,12 @@ export interface ConfidentialFundraising extends BaseContract {
   getFunction(
     nameOrSignature: "protocolId"
   ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "requestMyContributionDecryption"
+  ): TypedContractMethod<[campaignId: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "requestTotalRaisedDecryption"
+  ): TypedContractMethod<[campaignId: BigNumberish], [void], "nonpayable">;
 
   getEvent(
     key: "CampaignCancelled"
@@ -491,7 +527,7 @@ export interface ConfidentialFundraising extends BaseContract {
       CampaignCancelledEvent.OutputObject
     >;
 
-    "CampaignCreated(uint256,address,string,uint64,uint256)": TypedContractEvent<
+    "CampaignCreated(uint256,address,string,uint256,uint256)": TypedContractEvent<
       CampaignCreatedEvent.InputTuple,
       CampaignCreatedEvent.OutputTuple,
       CampaignCreatedEvent.OutputObject
