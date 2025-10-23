@@ -13,11 +13,20 @@ import "./storage/FundraisingStorage.sol";
  * @title ConfidentialFundraising
  * @notice A private fundraising platform where contribution amounts remain encrypted
  * @dev Uses FHEVM to keep individual contributions private while tracking totals
+ * 
+ * contribution amount and target will be stored as ether, not wei for reducing complexity while crypting
  */
 contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundraisingErrors, FundraisingStorage {
     using FHE for euint16;
     using FHE for euint64;
     using FHE for ebool;
+
+    modifier onlyCampaignOwner(uint16 campaignId) {
+        if (msg.sender != campaigns[campaignId].owner) {
+            revert OnlyOwner();
+        }
+        _;
+    }
     
     function createCampaign(
         string calldata title,
@@ -56,10 +65,21 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
     ) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
         
-        require(campaignId < campaignCount, "Campaign does not exist");
-        require(block.timestamp < campaign.deadline, "Campaign has ended");
-        require(!campaign.finalized, "Campaign already finalized");
-        require(!campaign.cancelled, "Campaign was cancelled");
+        if (campaignId > campaignCount) {
+            revert CampaignNotExist();
+        }
+
+        if (block.timestamp > campaign.deadline) {
+            revert CampaignEnded();
+        }
+
+        if (campaign.finalized) {
+            revert AlreadyFinalized();
+        }
+
+        if (campaign.cancelled) {
+            revert AlreadyCancelled();
+        }
         
         euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
         
@@ -86,26 +106,43 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
         emit ContributionMade(campaignId, msg.sender);
     }
     
-    function finalizeCampaign(uint16 campaignId) external {
+    function finalizeCampaign(uint16 campaignId) onlyCampaignOwner(campaignId) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
         
-        require(campaignId < campaignCount, "Campaign does not exist");
-        require(msg.sender == campaign.owner, "Only owner can finalize");
-        require(block.timestamp >= campaign.deadline, "Campaign still active");
-        require(!campaign.finalized, "Already finalized");
-        require(!campaign.cancelled, "Campaign was cancelled");
+        if (campaignId > campaignCount) {
+            revert CampaignNotExist();
+        }
+
+        if (block.timestamp < campaign.deadline) {
+            revert CampaignStillActive();
+        }
+
+        if (campaign.finalized) {
+            revert AlreadyFinalized();
+        }
+
+        if (campaign.cancelled) {
+            revert AlreadyCancelled();
+        }
         
         campaign.finalized = true;
         emit CampaignFinalized(campaignId, true);
     }
     
-    function cancelCampaign(uint16 campaignId) external {
+    function cancelCampaign(uint16 campaignId) onlyCampaignOwner(campaignId) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
         
-        require(campaignId < campaignCount, "Campaign does not exist");
-        require(msg.sender == campaign.owner, "Only owner can cancel");
-        require(!campaign.finalized, "Already finalized");
-        require(!campaign.cancelled, "Already cancelled");
+        if (campaignId > campaignCount) {
+            revert CampaignNotExist();
+        }
+
+        if (campaign.finalized) {
+            revert AlreadyFinalized();
+        }
+
+        if (campaign.cancelled) {
+            revert AlreadyCancelled();
+        }
         
         campaign.cancelled = true;
         emit CampaignCancelled(campaignId);
@@ -114,14 +151,31 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
     function claimTokens(uint16 campaignId) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
         
-        require(campaignId < campaignCount, "Campaign does not exist");
-        require(campaign.finalized, "Campaign not finalized");
-        require(!campaign.cancelled, "Campaign was cancelled");
-        require(!hasClaimed[campaignId][msg.sender], "Already claimed");
+        if (campaignId > campaignCount) {
+            revert CampaignNotExist();
+        }
+
+        if (!campaign.finalized) {
+            revert CampaignNotFinalized();
+        }
+
+        if (campaign.cancelled) {
+            revert AlreadyCancelled();
+        }
+        
+        if (hasClaimed[campaignId][msg.sender]) {
+            revert AlreadyClaimed();
+        }
         
         euint64 userContribution = encryptedContributions[campaignId][msg.sender];
-        require(FHE.isInitialized(userContribution), "No contribution found");
-        require(FHE.isSenderAllowed(userContribution), "Unauthorized access");
+        
+        if (!FHE.isInitialized(userContribution)) {
+            revert NoContributionFound();
+        }
+
+        if (!FHE.isSenderAllowed(userContribution)) {
+            revert UnauthorizedAccess();
+        }
         
         hasClaimed[campaignId][msg.sender] = true;
         emit TokensClaimed(campaignId, msg.sender);
@@ -136,7 +190,9 @@ contract ConfidentialFundraising is SepoliaConfig, IFundraisingEvents, IFundrais
         bool finalized,
         bool cancelled
     ) {
-        require(campaignId < campaignCount, "Campaign does not exist");
+        if (campaignId > campaignCount) {
+            revert CampaignNotExist();
+        }
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
         
         return (
