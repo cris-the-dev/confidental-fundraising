@@ -1,71 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "fhevm/lib/TFHE.sol";
-import "fhevm/config/ZamaFHEVMConfig.sol";
+import "@fhevm/solidity/lib/FHE.sol";
+import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
 /**
  * @title ConfidentialFundraising
  * @notice A private fundraising platform where contribution amounts remain encrypted
  * @dev Uses FHEVM to keep individual contributions private while tracking totals
  */
-contract ConfidentialFundraising is SepoliaZamaFHEVMConfig {
+contract ConfidentialFundraising is SepoliaConfig {
+    using FHE for euint64;
+    using FHE for ebool;
+    
     struct Campaign {
         address owner;
         string title;
         string description;
-        euint64 totalRaised;        // Encrypted total amount raised
-        uint64 targetAmount;        // Public goal (in wei)
-        uint256 deadline;           // Campaign end time
-        bool finalized;             // Whether campaign has been finalized
-        bool cancelled;             // Whether campaign was cancelled
+        euint64 totalRaised;
+        uint64 targetAmount;
+        uint256 deadline;
+        bool finalized;
+        bool cancelled;
     }
     
-    // Campaign ID => Campaign data
     mapping(uint256 => Campaign) public campaigns;
-    
-    // Campaign ID => Contributor address => Encrypted contribution amount
     mapping(uint256 => mapping(address => euint64)) private contributions;
-    
-    // Campaign ID => Contributor address => Has claimed tokens
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
-    
-    // Total number of campaigns created
     uint256 public campaignCount;
     
-    // Events
-    event CampaignCreated(
-        uint256 indexed campaignId,
-        address indexed owner,
-        string title,
-        uint64 targetAmount,
-        uint256 deadline
-    );
-    
-    event ContributionMade(
-        uint256 indexed campaignId,
-        address indexed contributor
-    );
-    
-    event CampaignFinalized(
-        uint256 indexed campaignId,
-        bool targetReached
-    );
-    
+    event CampaignCreated(uint256 indexed campaignId, address indexed owner, string title, uint64 targetAmount, uint256 deadline);
+    event ContributionMade(uint256 indexed campaignId, address indexed contributor);
+    event CampaignFinalized(uint256 indexed campaignId, bool targetReached);
     event CampaignCancelled(uint256 indexed campaignId);
+    event TokensClaimed(uint256 indexed campaignId, address indexed contributor);
     
-    event TokensClaimed(
-        uint256 indexed campaignId,
-        address indexed contributor
-    );
-    
-    /**
-     * @notice Create a new fundraising campaign
-     * @param title Campaign title
-     * @param description Campaign description
-     * @param target Target amount in wei
-     * @param duration Duration in seconds
-     */
     function createCampaign(
         string calldata title,
         string calldata description,
@@ -82,32 +51,23 @@ contract ConfidentialFundraising is SepoliaZamaFHEVMConfig {
             owner: msg.sender,
             title: title,
             description: description,
-            totalRaised: TFHE.asEuint64(0),
+            totalRaised: FHE.asEuint64(0),
             targetAmount: target,
             deadline: block.timestamp + duration,
             finalized: false,
             cancelled: false
         });
         
-        // Grant contract permission to access totalRaised
-        TFHE.allowThis(campaigns[campaignId].totalRaised);
-        // Grant owner permission to see total
-        TFHE.allow(campaigns[campaignId].totalRaised, msg.sender);
+        FHE.allowThis(campaigns[campaignId].totalRaised);
+        FHE.allow(campaigns[campaignId].totalRaised, msg.sender);
         
         emit CampaignCreated(campaignId, msg.sender, title, target, block.timestamp + duration);
-        
         return campaignId;
     }
     
-    /**
-     * @notice Contribute encrypted amount to a campaign
-     * @param campaignId ID of the campaign
-     * @param encAmount Encrypted contribution amount
-     * @param inputProof Zero-knowledge proof for the encrypted input
-     */
     function contribute(
         uint256 campaignId,
-        einput encAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) external {
         Campaign storage campaign = campaigns[campaignId];
@@ -117,42 +77,31 @@ contract ConfidentialFundraising is SepoliaZamaFHEVMConfig {
         require(!campaign.finalized, "Campaign already finalized");
         require(!campaign.cancelled, "Campaign was cancelled");
         
-        // Convert encrypted input with proof verification
-        euint64 amount = TFHE.asEuint64(encAmount, inputProof);
+        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
         
-        // Get existing contribution or zero if first time
         euint64 existingContribution = contributions[campaignId][msg.sender];
         
-        // Add to user's contribution
         euint64 newContribution;
-        if (TFHE.isInitialized(existingContribution)) {
-            newContribution = TFHE.add(existingContribution, amount);
+        if (FHE.isInitialized(existingContribution)) {
+            newContribution = FHE.add(existingContribution, amount);
         } else {
             newContribution = amount;
         }
         
         contributions[campaignId][msg.sender] = newContribution;
         
-        // Grant permissions
-        TFHE.allowThis(newContribution);
-        TFHE.allow(newContribution, msg.sender);
+        FHE.allowThis(newContribution);
+        FHE.allow(newContribution, msg.sender);
         
-        // Update total raised homomorphically
-        euint64 newTotal = TFHE.add(campaign.totalRaised, amount);
+        euint64 newTotal = FHE.add(campaign.totalRaised, amount);
         campaign.totalRaised = newTotal;
         
-        // Grant permissions for total
-        TFHE.allowThis(newTotal);
-        TFHE.allow(newTotal, campaign.owner);
+        FHE.allowThis(newTotal);
+        FHE.allow(newTotal, campaign.owner);
         
         emit ContributionMade(campaignId, msg.sender);
     }
     
-    /**
-     * @notice Finalize a campaign after deadline
-     * @param campaignId ID of the campaign
-     * @dev In production, use Gateway async decryption to check if target reached
-     */
     function finalizeCampaign(uint256 campaignId) external {
         Campaign storage campaign = campaigns[campaignId];
         
@@ -163,14 +112,9 @@ contract ConfidentialFundraising is SepoliaZamaFHEVMConfig {
         require(!campaign.cancelled, "Campaign was cancelled");
         
         campaign.finalized = true;
-        
         emit CampaignFinalized(campaignId, true);
     }
     
-    /**
-     * @notice Cancel a campaign (only owner, before finalization)
-     * @param campaignId ID of the campaign
-     */
     function cancelCampaign(uint256 campaignId) external {
         Campaign storage campaign = campaigns[campaignId];
         
@@ -180,14 +124,9 @@ contract ConfidentialFundraising is SepoliaZamaFHEVMConfig {
         require(!campaign.cancelled, "Already cancelled");
         
         campaign.cancelled = true;
-        
         emit CampaignCancelled(campaignId);
     }
     
-    /**
-     * @notice Claim tokens after successful campaign
-     * @param campaignId ID of the campaign
-     */
     function claimTokens(uint256 campaignId) external {
         Campaign storage campaign = campaigns[campaignId];
         
@@ -197,21 +136,13 @@ contract ConfidentialFundraising is SepoliaZamaFHEVMConfig {
         require(!hasClaimed[campaignId][msg.sender], "Already claimed");
         
         euint64 userContribution = contributions[campaignId][msg.sender];
-        require(TFHE.isInitialized(userContribution), "No contribution found");
+        require(FHE.isInitialized(userContribution), "No contribution found");
+        require(FHE.isSenderAllowed(userContribution), "Unauthorized access");
         
-        // Verify user has permission to access their contribution
-        require(TFHE.isSenderAllowed(userContribution), "Unauthorized access");
-        
-        // Mark as claimed
         hasClaimed[campaignId][msg.sender] = true;
-        
         emit TokensClaimed(campaignId, msg.sender);
     }
     
-    /**
-     * @notice Get campaign details
-     * @param campaignId ID of the campaign
-     */
     function getCampaign(uint256 campaignId) external view returns (
         address owner,
         string memory title,
@@ -235,19 +166,11 @@ contract ConfidentialFundraising is SepoliaZamaFHEVMConfig {
         );
     }
     
-    /**
-     * @notice Get encrypted total raised (only owner can decrypt via re-encryption)
-     * @param campaignId ID of the campaign
-     */
     function getEncryptedTotal(uint256 campaignId) external view returns (euint64) {
         require(campaignId < campaignCount, "Campaign does not exist");
         return campaigns[campaignId].totalRaised;
     }
     
-    /**
-     * @notice Get encrypted contribution for the caller
-     * @param campaignId ID of the campaign
-     */
     function getMyContribution(uint256 campaignId) external view returns (euint64) {
         require(campaignId < campaignCount, "Campaign does not exist");
         return contributions[campaignId][msg.sender];

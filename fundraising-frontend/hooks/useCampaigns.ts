@@ -1,6 +1,12 @@
 import { useCallback, useState } from "react";
 import { useWallets } from "@privy-io/react-auth";
-import { createWalletClient, custom, publicActions, parseEther } from "viem";
+import {
+  createWalletClient,
+  custom,
+  publicActions,
+  parseEther,
+  toHex,  // ✅ Keep this import
+} from "viem";
 import { sepolia } from "viem/chains";
 import { useEncrypt } from "./useEncrypt";
 import { CONTRACT_ADDRESS } from "../lib/contracts/config";
@@ -26,10 +32,6 @@ export function useCampaigns() {
     }).extend(publicActions);
   }, [wallets]);
 
-  // ==========================================
-  // WRITE OPERATIONS
-  // ==========================================
-
   const createCampaign = async (
     title: string,
     description: string,
@@ -42,11 +44,6 @@ export function useCampaigns() {
       const targetWei = parseEther(targetAmount);
       const durationSeconds = BigInt(durationDays * 24 * 60 * 60);
 
-      console.log("📝 Creating campaign...");
-      console.log("  - Title:", title);
-      console.log("  - Target:", targetAmount, "ETH");
-      console.log("  - Duration:", durationDays, "days");
-
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
@@ -54,13 +51,10 @@ export function useCampaigns() {
         args: [title, description, BigInt(targetWei), durationSeconds],
       });
 
-      console.log("⏳ Waiting for confirmation...");
       await client.waitForTransactionReceipt({ hash });
-      console.log("✅ Campaign created!");
-
       return hash;
     } catch (error) {
-      console.error("❌ Error creating campaign:", error);
+      console.error("Error creating campaign:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -68,37 +62,46 @@ export function useCampaigns() {
   };
 
   const contribute = async (campaignId: number, amount: string) => {
-    setLoading(true);
     try {
       const client = await getClient();
       const amountWei = parseEther(amount);
 
-      console.log("🔐 Encrypting contribution amount...");
-      console.log("  - Amount:", amount, "ETH");
+      console.log("💰 Contributing:", amount, "ETH");
 
-      // Encrypt the amount using the useEncrypt hook
-      const { data: encryptedData, proof } = await encrypt64(amountWei);
+      // Encrypt the amount
+      const { encryptedData, proof } = await encrypt64(amountWei);
 
-      console.log("📤 Submitting encrypted contribution...");
+      // ✅ FIXED: Convert Uint8Array to hex string for viem
+      // The contract expects bytes, but viem's TypeScript types require hex strings
+      const encryptedDataHex = toHex(encryptedData);
+      const proofHex = toHex(proof);
+
+      console.log("📤 Sending transaction...");
 
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "contribute",
-
-        args: [BigInt(campaignId), encryptedData as any, proof],
+        args: [
+          BigInt(campaignId),
+          encryptedDataHex,  // ✅ Now it's `0x${string}` type
+          proofHex,          // ✅ Now it's `0x${string}` type
+        ],
       });
 
-      console.log("⏳ Waiting for confirmation...");
-      await client.waitForTransactionReceipt({ hash });
-      console.log("✅ Contribution successful!");
+      console.log("⏳ Transaction submitted:", hash);
+      const receipt = await client.waitForTransactionReceipt({ hash });
+
+      if (receipt.status === "success") {
+        console.log("✅ Transaction confirmed!");
+      } else {
+        throw new Error("Transaction reverted");
+      }
 
       return hash;
     } catch (error) {
-      console.error("❌ Error contributing:", error);
+      console.error("❌ Contribution failed:", error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -106,8 +109,6 @@ export function useCampaigns() {
     setLoading(true);
     try {
       const client = await getClient();
-
-      console.log("🏁 Finalizing campaign...");
 
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS,
@@ -117,11 +118,9 @@ export function useCampaigns() {
       });
 
       await client.waitForTransactionReceipt({ hash });
-      console.log("✅ Campaign finalized!");
-
       return hash;
     } catch (error) {
-      console.error("❌ Error finalizing campaign:", error);
+      console.error("Error finalizing campaign:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -133,8 +132,6 @@ export function useCampaigns() {
     try {
       const client = await getClient();
 
-      console.log("🚫 Cancelling campaign...");
-
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
@@ -143,11 +140,9 @@ export function useCampaigns() {
       });
 
       await client.waitForTransactionReceipt({ hash });
-      console.log("✅ Campaign cancelled!");
-
       return hash;
     } catch (error) {
-      console.error("❌ Error cancelling campaign:", error);
+      console.error("Error cancelling campaign:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -159,8 +154,6 @@ export function useCampaigns() {
     try {
       const client = await getClient();
 
-      console.log("🎁 Claiming tokens...");
-
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
@@ -169,20 +162,14 @@ export function useCampaigns() {
       });
 
       await client.waitForTransactionReceipt({ hash });
-      console.log("✅ Tokens claimed!");
-
       return hash;
     } catch (error) {
-      console.error("❌ Error claiming tokens:", error);
+      console.error("Error claiming tokens:", error);
       throw error;
     } finally {
       setLoading(false);
     }
   };
-
-  // ==========================================
-  // READ OPERATIONS
-  // ==========================================
 
   const getCampaign = async (campaignId: number): Promise<Campaign> => {
     try {

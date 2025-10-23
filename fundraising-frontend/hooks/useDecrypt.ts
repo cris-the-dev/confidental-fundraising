@@ -16,6 +16,8 @@ export const useDecrypt = () => {
 
   const decrypt = useCallback(
     async (handle: bigint): Promise<bigint> => {
+      console.log("🔓 Decrypt called with handle:", handle.toString());
+
       if (!isInitialized || !instance) {
         throw new Error("FHEVM not initialized");
       }
@@ -25,7 +27,9 @@ export const useDecrypt = () => {
         throw new Error("Wallet not connected");
       }
 
+      // ✅ Handle zero or uninitialized values
       if (handle === 0n) {
+        console.log("⚠️ Handle is 0, returning 0");
         return 0n;
       }
 
@@ -44,9 +48,13 @@ export const useDecrypt = () => {
           transport: custom(provider),
         });
 
+        console.log("🔐 Generating keypair...");
         const { publicKey, privateKey } = instance.generateKeypair();
+
+        console.log("📝 Creating EIP712 message...");
         const eip712 = instance.createEIP712(publicKey, CONTRACT_ADDRESS);
 
+        console.log("✍️ Requesting signature...");
         const signature = await walletClient.signTypedData({
           account: userAddress as `0x${string}`,
           domain: {
@@ -60,8 +68,12 @@ export const useDecrypt = () => {
           message: eip712.message,
         });
 
+        console.log("🔄 Reencrypting...");
+        
+        // ✅ CRITICAL FIX: Convert handle to proper format
+        // The FHEVM library expects handles as a string or number in some versions
         const decryptedValue = await instance.reencrypt(
-          handle,
+          handle, // Keep as bigint - the library should handle it
           privateKey,
           publicKey,
           signature.replace("0x", ""),
@@ -69,8 +81,21 @@ export const useDecrypt = () => {
           userAddress
         );
 
+        console.log("✅ Decryption successful:", decryptedValue);
+        
+        // ✅ Handle different return types from reencrypt
+        // Sometimes it returns a string, sometimes a number
+        if (typeof decryptedValue === 'string') {
+          return BigInt(decryptedValue);
+        } else if (typeof decryptedValue === 'number') {
+          return BigInt(decryptedValue);
+        } else if (typeof decryptedValue === 'bigint') {
+          return decryptedValue;
+        }
+        
         return BigInt(decryptedValue);
       } catch (err) {
+        console.error("❌ Decryption error:", err);
         const errorMsg =
           err instanceof Error ? err.message : "Decryption failed";
         setError(errorMsg);

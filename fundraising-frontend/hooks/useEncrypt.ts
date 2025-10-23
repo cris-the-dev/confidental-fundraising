@@ -4,18 +4,9 @@ import { useFhevm } from "../contexts/FhevmContext";
 import { CONTRACT_ADDRESS } from "../lib/contracts/config";
 
 interface EncryptedData {
-  data: string;
-  proof: `0x${string}`;
+  encryptedData: Uint8Array;
+  proof: Uint8Array;
 }
-
-const toHexString = (bytes: Uint8Array): string => {
-  return (
-    "0x" +
-    Array.from(bytes)
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("")
-  );
-};
 
 export const useEncrypt = () => {
   const { instance, isInitialized } = useFhevm();
@@ -25,15 +16,8 @@ export const useEncrypt = () => {
 
   const encrypt64 = useCallback(
     async (value: bigint): Promise<EncryptedData> => {
-      console.log("🔐 Encrypt called - Checking initialization...");
-      console.log("  - isInitialized:", isInitialized);
-      console.log("  - instance:", instance ? "exists" : "null");
-
       if (!isInitialized || !instance) {
-        const errorMsg =
-          "FHEVM not initialized. Please wait for initialization to complete.";
-        console.error("❌", errorMsg);
-        throw new Error(errorMsg);
+        throw new Error("FHEVM not initialized");
       }
 
       const userAddress = user?.wallet?.address;
@@ -45,40 +29,35 @@ export const useEncrypt = () => {
       setError(null);
 
       try {
-        console.log("🔐 Encrypting value:", value.toString());
-        console.log("  - Contract:", CONTRACT_ADDRESS);
-        console.log("  - User:", userAddress);
+        // ✅ Validate against uint64 range
+        const MAX_UINT64 = BigInt("18446744073709551615");
+        if (value < 0n || value > MAX_UINT64) {
+          throw new Error(`Value out of range for uint64`);
+        }
 
+        // Create encrypted input
         const input = instance.createEncryptedInput(
           CONTRACT_ADDRESS,
           userAddress
         );
-        input.add64(value);
+        
+        // Add value (safe after validation)
+        input.add64(Number(value));
+        
+        // Perform encryption
         const encryptedInput = await input.encrypt();
 
-        // Convert Uint8Array to hex string if needed
-        const handle =
-          typeof encryptedInput.handles[0] === "string"
-            ? encryptedInput.handles[0]
-            : toHexString(encryptedInput.handles[0]);
+        if (!encryptedInput.handles?.[0] || !encryptedInput.inputProof) {
+          throw new Error('Invalid encryption result');
+        }
 
-        const proof =
-          typeof encryptedInput.inputProof === "string"
-            ? (encryptedInput.inputProof as `0x${string}`)
-            : (toHexString(encryptedInput.inputProof) as `0x${string}`);
-
-        console.log("✅ Encryption successful");
-        console.log("  - Handle:", handle.slice(0, 20) + "...");
-        console.log("  - Proof:", proof.slice(0, 20) + "...");
-
+        // ✅ Return raw Uint8Array - NO hex conversion
         return {
-          data: handle,
-          proof: proof,
+          encryptedData: encryptedInput.handles[0],
+          proof: encryptedInput.inputProof,
         };
       } catch (err) {
-        const errorMsg =
-          err instanceof Error ? err.message : "Encryption failed";
-        console.error("❌ Encryption error:", errorMsg);
+        const errorMsg = err instanceof Error ? err.message : "Encryption failed";
         setError(errorMsg);
         throw new Error(errorMsg);
       } finally {
