@@ -26,8 +26,11 @@ import type {
 export interface ConfidentialFundraisingInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "CACHE_TIMEOUT"
+      | "callbackDecryptAvailableBalance"
       | "callbackDecryptMyContribution"
       | "callbackDecryptTotalRaised"
+      | "campaignContract"
       | "campaignCount"
       | "campaigns"
       | "cancelCampaign"
@@ -36,24 +39,40 @@ export interface ConfidentialFundraisingInterface extends Interface {
       | "createCampaign"
       | "finalizeCampaign"
       | "getCampaign"
+      | "getCampaignContributors"
+      | "getContributionStatus"
       | "getMyContribution"
       | "getTotalRaised"
+      | "getTotalRaisedStatus"
       | "hasClaimed"
+      | "hasClaimedTokens"
+      | "hasContribution"
       | "protocolId"
       | "requestMyContributionDecryption"
       | "requestTotalRaisedDecryption"
+      | "shareVault"
   ): FunctionFragment;
 
   getEvent(
     nameOrSignatureOrTopic:
       | "CampaignCancelled"
       | "CampaignCreated"
+      | "CampaignFailed"
       | "CampaignFinalized"
       | "ContributionMade"
       | "DecryptionFulfilled"
       | "TokensClaimed"
+      | "TokensDistributed"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "CACHE_TIMEOUT",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "callbackDecryptAvailableBalance",
+    values: [BigNumberish, BytesLike, BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "callbackDecryptMyContribution",
     values: [BigNumberish, BytesLike, BytesLike]
@@ -61,6 +80,10 @@ export interface ConfidentialFundraisingInterface extends Interface {
   encodeFunctionData(
     functionFragment: "callbackDecryptTotalRaised",
     values: [BigNumberish, BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "campaignContract",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "campaignCount",
@@ -88,11 +111,19 @@ export interface ConfidentialFundraisingInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "finalizeCampaign",
-    values: [BigNumberish]
+    values: [BigNumberish, string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "getCampaign",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCampaignContributors",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getContributionStatus",
+    values: [BigNumberish, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getMyContribution",
@@ -103,7 +134,19 @@ export interface ConfidentialFundraisingInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "getTotalRaisedStatus",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "hasClaimed",
+    values: [BigNumberish, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "hasClaimedTokens",
+    values: [BigNumberish, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "hasContribution",
     values: [BigNumberish, AddressLike]
   ): string;
   encodeFunctionData(
@@ -118,13 +161,29 @@ export interface ConfidentialFundraisingInterface extends Interface {
     functionFragment: "requestTotalRaisedDecryption",
     values: [BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "shareVault",
+    values?: undefined
+  ): string;
 
+  decodeFunctionResult(
+    functionFragment: "CACHE_TIMEOUT",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "callbackDecryptAvailableBalance",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "callbackDecryptMyContribution",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "callbackDecryptTotalRaised",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "campaignContract",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -154,6 +213,14 @@ export interface ConfidentialFundraisingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getCampaignContributors",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getContributionStatus",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getMyContribution",
     data: BytesLike
   ): Result;
@@ -161,7 +228,19 @@ export interface ConfidentialFundraisingInterface extends Interface {
     functionFragment: "getTotalRaised",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "getTotalRaisedStatus",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "hasClaimed", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "hasClaimedTokens",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "hasContribution",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "protocolId", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "requestMyContributionDecryption",
@@ -171,6 +250,7 @@ export interface ConfidentialFundraisingInterface extends Interface {
     functionFragment: "requestTotalRaisedDecryption",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "shareVault", data: BytesLike): Result;
 }
 
 export namespace CampaignCancelledEvent {
@@ -206,6 +286,18 @@ export namespace CampaignCreatedEvent {
     title: string;
     targetAmount: bigint;
     deadline: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace CampaignFailedEvent {
+  export type InputTuple = [campaignId: BigNumberish];
+  export type OutputTuple = [campaignId: bigint];
+  export interface OutputObject {
+    campaignId: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -264,6 +356,28 @@ export namespace TokensClaimedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace TokensDistributedEvent {
+  export type InputTuple = [
+    campaignId: BigNumberish,
+    contributor: AddressLike,
+    amount: BigNumberish
+  ];
+  export type OutputTuple = [
+    campaignId: bigint,
+    contributor: string,
+    amount: bigint
+  ];
+  export interface OutputObject {
+    campaignId: bigint;
+    contributor: string;
+    amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export interface ConfidentialFundraising extends BaseContract {
   connect(runner?: ContractRunner | null): ConfidentialFundraising;
   waitForDeployment(): Promise<this>;
@@ -307,6 +421,18 @@ export interface ConfidentialFundraising extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  CACHE_TIMEOUT: TypedContractMethod<[], [bigint], "view">;
+
+  callbackDecryptAvailableBalance: TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+
   callbackDecryptMyContribution: TypedContractMethod<
     [
       requestId: BigNumberish,
@@ -327,12 +453,24 @@ export interface ConfidentialFundraising extends BaseContract {
     "nonpayable"
   >;
 
+  campaignContract: TypedContractMethod<[], [string], "view">;
+
   campaignCount: TypedContractMethod<[], [bigint], "view">;
 
   campaigns: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, string, string, string, bigint, bigint, boolean, boolean] & {
+      [
+        string,
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        boolean,
+        boolean,
+        string
+      ] & {
         owner: string;
         title: string;
         description: string;
@@ -341,6 +479,7 @@ export interface ConfidentialFundraising extends BaseContract {
         deadline: bigint;
         finalized: boolean;
         cancelled: boolean;
+        tokenAddress: string;
       }
     ],
     "view"
@@ -380,7 +519,7 @@ export interface ConfidentialFundraising extends BaseContract {
   >;
 
   finalizeCampaign: TypedContractMethod<
-    [campaignId: BigNumberish],
+    [campaignId: BigNumberish, tokenName: string, tokenSymbol: string],
     [void],
     "nonpayable"
   >;
@@ -401,6 +540,24 @@ export interface ConfidentialFundraising extends BaseContract {
     "view"
   >;
 
+  getCampaignContributors: TypedContractMethod<
+    [campaignId: BigNumberish],
+    [string[]],
+    "view"
+  >;
+
+  getContributionStatus: TypedContractMethod<
+    [campaignId: BigNumberish, user: AddressLike],
+    [
+      [bigint, bigint, bigint] & {
+        status: bigint;
+        contribution: bigint;
+        cacheExpiry: bigint;
+      }
+    ],
+    "view"
+  >;
+
   getMyContribution: TypedContractMethod<
     [campaignId: BigNumberish],
     [bigint],
@@ -413,8 +570,32 @@ export interface ConfidentialFundraising extends BaseContract {
     "view"
   >;
 
+  getTotalRaisedStatus: TypedContractMethod<
+    [campaignId: BigNumberish],
+    [
+      [bigint, bigint, bigint] & {
+        status: bigint;
+        totalRaised: bigint;
+        cacheExpiry: bigint;
+      }
+    ],
+    "view"
+  >;
+
   hasClaimed: TypedContractMethod<
     [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+
+  hasClaimedTokens: TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+
+  hasContribution: TypedContractMethod<
+    [campaignId: BigNumberish, user: AddressLike],
     [boolean],
     "view"
   >;
@@ -433,10 +614,26 @@ export interface ConfidentialFundraising extends BaseContract {
     "nonpayable"
   >;
 
+  shareVault: TypedContractMethod<[], [string], "view">;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "CACHE_TIMEOUT"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "callbackDecryptAvailableBalance"
+  ): TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "callbackDecryptMyContribution"
   ): TypedContractMethod<
@@ -460,6 +657,9 @@ export interface ConfidentialFundraising extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "campaignContract"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "campaignCount"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
@@ -467,7 +667,17 @@ export interface ConfidentialFundraising extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, string, string, string, bigint, bigint, boolean, boolean] & {
+      [
+        string,
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        boolean,
+        boolean,
+        string
+      ] & {
         owner: string;
         title: string;
         description: string;
@@ -476,6 +686,7 @@ export interface ConfidentialFundraising extends BaseContract {
         deadline: bigint;
         finalized: boolean;
         cancelled: boolean;
+        tokenAddress: string;
       }
     ],
     "view"
@@ -511,7 +722,11 @@ export interface ConfidentialFundraising extends BaseContract {
   >;
   getFunction(
     nameOrSignature: "finalizeCampaign"
-  ): TypedContractMethod<[campaignId: BigNumberish], [void], "nonpayable">;
+  ): TypedContractMethod<
+    [campaignId: BigNumberish, tokenName: string, tokenSymbol: string],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "getCampaign"
   ): TypedContractMethod<
@@ -530,15 +745,58 @@ export interface ConfidentialFundraising extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "getCampaignContributors"
+  ): TypedContractMethod<[campaignId: BigNumberish], [string[]], "view">;
+  getFunction(
+    nameOrSignature: "getContributionStatus"
+  ): TypedContractMethod<
+    [campaignId: BigNumberish, user: AddressLike],
+    [
+      [bigint, bigint, bigint] & {
+        status: bigint;
+        contribution: bigint;
+        cacheExpiry: bigint;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "getMyContribution"
   ): TypedContractMethod<[campaignId: BigNumberish], [bigint], "view">;
   getFunction(
     nameOrSignature: "getTotalRaised"
   ): TypedContractMethod<[campaignId: BigNumberish], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getTotalRaisedStatus"
+  ): TypedContractMethod<
+    [campaignId: BigNumberish],
+    [
+      [bigint, bigint, bigint] & {
+        status: bigint;
+        totalRaised: bigint;
+        cacheExpiry: bigint;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "hasClaimed"
   ): TypedContractMethod<
     [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "hasClaimedTokens"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "hasContribution"
+  ): TypedContractMethod<
+    [campaignId: BigNumberish, user: AddressLike],
     [boolean],
     "view"
   >;
@@ -551,6 +809,9 @@ export interface ConfidentialFundraising extends BaseContract {
   getFunction(
     nameOrSignature: "requestTotalRaisedDecryption"
   ): TypedContractMethod<[campaignId: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "shareVault"
+  ): TypedContractMethod<[], [string], "view">;
 
   getEvent(
     key: "CampaignCancelled"
@@ -565,6 +826,13 @@ export interface ConfidentialFundraising extends BaseContract {
     CampaignCreatedEvent.InputTuple,
     CampaignCreatedEvent.OutputTuple,
     CampaignCreatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "CampaignFailed"
+  ): TypedContractEvent<
+    CampaignFailedEvent.InputTuple,
+    CampaignFailedEvent.OutputTuple,
+    CampaignFailedEvent.OutputObject
   >;
   getEvent(
     key: "CampaignFinalized"
@@ -594,6 +862,13 @@ export interface ConfidentialFundraising extends BaseContract {
     TokensClaimedEvent.OutputTuple,
     TokensClaimedEvent.OutputObject
   >;
+  getEvent(
+    key: "TokensDistributed"
+  ): TypedContractEvent<
+    TokensDistributedEvent.InputTuple,
+    TokensDistributedEvent.OutputTuple,
+    TokensDistributedEvent.OutputObject
+  >;
 
   filters: {
     "CampaignCancelled(uint256)": TypedContractEvent<
@@ -616,6 +891,17 @@ export interface ConfidentialFundraising extends BaseContract {
       CampaignCreatedEvent.InputTuple,
       CampaignCreatedEvent.OutputTuple,
       CampaignCreatedEvent.OutputObject
+    >;
+
+    "CampaignFailed(uint16)": TypedContractEvent<
+      CampaignFailedEvent.InputTuple,
+      CampaignFailedEvent.OutputTuple,
+      CampaignFailedEvent.OutputObject
+    >;
+    CampaignFailed: TypedContractEvent<
+      CampaignFailedEvent.InputTuple,
+      CampaignFailedEvent.OutputTuple,
+      CampaignFailedEvent.OutputObject
     >;
 
     "CampaignFinalized(uint256,bool)": TypedContractEvent<
@@ -660,6 +946,17 @@ export interface ConfidentialFundraising extends BaseContract {
       TokensClaimedEvent.InputTuple,
       TokensClaimedEvent.OutputTuple,
       TokensClaimedEvent.OutputObject
+    >;
+
+    "TokensDistributed(uint16,address,uint256)": TypedContractEvent<
+      TokensDistributedEvent.InputTuple,
+      TokensDistributedEvent.OutputTuple,
+      TokensDistributedEvent.OutputObject
+    >;
+    TokensDistributed: TypedContractEvent<
+      TokensDistributedEvent.InputTuple,
+      TokensDistributedEvent.OutputTuple,
+      TokensDistributedEvent.OutputObject
     >;
   };
 }

@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { FundraisingStorage } from "./FundraisingStorage";
+export type { ShareVaultStorage } from "./ShareVaultStorage";

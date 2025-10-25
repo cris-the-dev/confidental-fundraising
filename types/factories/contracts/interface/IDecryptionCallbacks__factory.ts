@@ -27,6 +27,29 @@ const _abi = [
         type: "bytes",
       },
     ],
+    name: "callbackDecryptAvailableBalance",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "requestId",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes",
+        name: "cleartexts",
+        type: "bytes",
+      },
+      {
+        internalType: "bytes",
+        name: "decryptionProof",
+        type: "bytes",
+      },
+    ],
     name: "callbackDecryptMyContribution",
     outputs: [],
     stateMutability: "nonpayable",

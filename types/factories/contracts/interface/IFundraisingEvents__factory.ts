@@ -64,6 +64,19 @@ const _abi = [
     inputs: [
       {
         indexed: true,
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "CampaignFailed",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
         internalType: "uint256",
         name: "campaignId",
         type: "uint256",
@@ -114,6 +127,31 @@ const _abi = [
       },
     ],
     name: "TokensClaimed",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "contributor",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "TokensDistributed",
     type: "event",
   },
 ] as const;

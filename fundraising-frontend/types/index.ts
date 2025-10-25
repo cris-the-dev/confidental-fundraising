@@ -7,6 +7,7 @@ export interface Campaign {
   deadline: number;
   finalized: boolean;
   cancelled: boolean;
+  tokenAddress?: `0x${string}`;
 }
 
 export interface FhevmInstance {

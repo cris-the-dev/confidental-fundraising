@@ -23,10 +23,15 @@ import type {
 export interface IDecryptionCallbacksInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "callbackDecryptAvailableBalance"
       | "callbackDecryptMyContribution"
       | "callbackDecryptTotalRaised"
   ): FunctionFragment;
 
+  encodeFunctionData(
+    functionFragment: "callbackDecryptAvailableBalance",
+    values: [BigNumberish, BytesLike, BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "callbackDecryptMyContribution",
     values: [BigNumberish, BytesLike, BytesLike]
@@ -36,6 +41,10 @@ export interface IDecryptionCallbacksInterface extends Interface {
     values: [BigNumberish, BytesLike, BytesLike]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "callbackDecryptAvailableBalance",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "callbackDecryptMyContribution",
     data: BytesLike
@@ -89,6 +98,16 @@ export interface IDecryptionCallbacks extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  callbackDecryptAvailableBalance: TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+
   callbackDecryptMyContribution: TypedContractMethod<
     [
       requestId: BigNumberish,
@@ -113,6 +132,17 @@ export interface IDecryptionCallbacks extends BaseContract {
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "callbackDecryptAvailableBalance"
+  ): TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "callbackDecryptMyContribution"
   ): TypedContractMethod<

@@ -68,6 +68,7 @@ contract ConfidentialFundraising is
         });
 
         FHE.allowThis(campaigns[campaignId].totalRaised);
+        FHE.allow(campaigns[campaignId].totalRaised, address(shareVault));
         FHE.allow(campaigns[campaignId].totalRaised, msg.sender);
 
         emit CampaignCreated(
@@ -131,12 +132,14 @@ contract ConfidentialFundraising is
         encryptedContributions[campaignId][msg.sender] = newContribution;
 
         FHE.allowThis(newContribution);
+        FHE.allow(newContribution, address(shareVault));
         FHE.allow(newContribution, msg.sender);
 
         euint64 newTotal = FHE.add(campaign.totalRaised, amount);
         campaign.totalRaised = newTotal;
 
         FHE.allowThis(newTotal);
+        FHE.allow(newTotal, address(shareVault));
         FHE.allow(newTotal, campaign.owner);
 
         emit ContributionMade(campaignId, msg.sender);

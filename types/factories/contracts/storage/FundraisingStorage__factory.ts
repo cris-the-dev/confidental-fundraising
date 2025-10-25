@@ -72,6 +72,11 @@ const _abi = [
         name: "cancelled",
         type: "bool",
       },
+      {
+        internalType: "address",
+        name: "tokenAddress",
+        type: "address",
+      },
     ],
     stateMutability: "view",
     type: "function",
@@ -90,6 +95,30 @@ const _abi = [
       },
     ],
     name: "hasClaimed",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "hasClaimedTokens",
     outputs: [
       {
         internalType: "bool",

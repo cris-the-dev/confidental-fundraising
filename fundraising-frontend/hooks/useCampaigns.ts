@@ -9,9 +9,10 @@ import {
 } from "viem";
 import { sepolia } from "viem/chains";
 import { useEncrypt } from "./useEncrypt";
-import { CONTRACT_ADDRESS } from "../lib/contracts/config";
+import { CONTRACT_ADDRESS, VAULT_ADDRESS } from "../lib/contracts/config";
 import { FUNDRAISING_ABI } from "../lib/contracts/abi";
 import { Campaign } from "../types";
+import { VAULT_ABI } from "../lib/contracts/vaultAbi";
 
 export function useCampaigns() {
   const { wallets } = useWallets();
@@ -205,7 +206,11 @@ export function useCampaigns() {
     }
   };
 
-  const finalizeCampaign = async (campaignId: number) => {
+  const finalizeCampaign = async (
+    campaignId: number,
+    tokenName: string,
+    tokenSymbol: string
+  ) => {
     setLoading(true);
     try {
       const client = await getClient();
@@ -214,11 +219,11 @@ export function useCampaigns() {
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "finalizeCampaign",
-        args: [campaignId],
+        args: [campaignId, tokenName, tokenSymbol],
       });
 
       await client.waitForTransactionReceipt({ hash });
-      return hash;
+      console.log("✅ Campaign finalized");
     } catch (error) {
       console.error("Error finalizing campaign:", error);
       throw error;
@@ -393,6 +398,175 @@ export function useCampaigns() {
     }
   };
 
+  // Vault deposit
+  const depositToVault = async (amount: string) => {
+    setLoading(true);
+    try {
+      const client = await getClient();
+      const amountWei = parseEther(amount);
+
+      // Validate uint64 range
+      const MAX_UINT64 = BigInt("18446744073709551615");
+      if (amountWei > MAX_UINT64) {
+        throw new Error("Amount too large for uint64");
+      }
+
+      const hash = await client.writeContract({
+        address: VAULT_ADDRESS, // Add this to your config
+        abi: VAULT_ABI, // Add vault ABI
+        functionName: "deposit",
+        args: [],
+        value: amountWei,
+      });
+
+      await client.waitForTransactionReceipt({ hash });
+      return hash;
+    } catch (error) {
+      console.error("Error depositing to vault:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Request available balance decryption
+  const requestAvailableBalanceDecryption = async () => {
+    setLoading(true);
+    try {
+      const client = await getClient();
+
+      const hash = await client.writeContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "requestAvailableBalanceDecryption",
+        args: [],
+      });
+
+      await client.waitForTransactionReceipt({ hash });
+      console.log("✅ Available balance decryption requested");
+      return hash;
+    } catch (error) {
+      console.error("Error requesting balance decryption:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get available balance
+  const getAvailableBalance = async (): Promise<bigint> => {
+    try {
+      const client = await getClient();
+
+      const balance = await client.readContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "getAvailableBalance",
+        args: [],
+      });
+
+      return BigInt(balance);
+    } catch (error) {
+      console.error("Error fetching available balance:", error);
+      throw error;
+    }
+  };
+
+  // Get available balance status
+  const getAvailableBalanceStatus = async (): Promise<{
+    status: number;
+    availableAmount: bigint;
+    cacheExpiry: bigint;
+  }> => {
+    try {
+      const client = await getClient();
+      const userAddress = wallets[0]?.address;
+
+      if (!userAddress) throw new Error("No wallet connected");
+
+      const result = await client.readContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "getAvailableBalanceStatus",
+      });
+
+      return {
+        status: Number(result[0]),
+        availableAmount: BigInt(result[1]),
+        cacheExpiry: BigInt(result[2]),
+      };
+    } catch (error) {
+      console.error("Error fetching balance status:", error);
+      throw error;
+    }
+  };
+
+  // Withdraw from vault
+  const withdrawFromVault = async (amount: string) => {
+    setLoading(true);
+    try {
+      const client = await getClient();
+      const amountWei = parseEther(amount);
+
+      // Validate uint64 range
+      const MAX_UINT64 = BigInt("18446744073709551615");
+      if (amountWei > MAX_UINT64) {
+        throw new Error("Amount too large for uint64");
+      }
+
+      const hash = await client.writeContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "withdraw",
+        args: [amountWei],
+      });
+
+      await client.waitForTransactionReceipt({ hash });
+      return hash;
+    } catch (error) {
+      console.error("Error withdrawing from vault:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get encrypted balance (for display purposes)
+  const getEncryptedBalance = async (): Promise<bigint> => {
+    try {
+      const client = await getClient();
+
+      const balance = await client.readContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "getEncryptedBalance",
+      });
+
+      return BigInt(balance);
+    } catch (error) {
+      console.error("Error fetching encrypted balance:", error);
+      throw error;
+    }
+  };
+
+  // Get total locked
+  const getTotalLocked = async (): Promise<bigint> => {
+    try {
+      const client = await getClient();
+
+      const locked = await client.readContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "getTotalLocked",
+      });
+
+      return BigInt(locked);
+    } catch (error) {
+      console.error("Error fetching total locked:", error);
+      throw error;
+    }
+  };
+
   return {
     loading,
     createCampaign,
@@ -409,5 +583,12 @@ export function useCampaigns() {
     getContributionStatus,
     checkHasContribution,
     getTotalRaisedStatus,
+    depositToVault,
+    requestAvailableBalanceDecryption,
+    getAvailableBalance,
+    getAvailableBalanceStatus,
+    withdrawFromVault,
+    getEncryptedBalance,
+    getTotalLocked,
   };
 }

@@ -38,6 +38,15 @@ export default function Header() {
                 Create Campaign
               </Link>
             )}
+
+            {authenticated && (
+              <Link
+                href="/vault"
+                className="text-gray-700 hover:text-purple-600 font-medium transition"
+              >
+                My Vault
+              </Link>
+            )}
             
             <div className="flex items-center space-x-4">
               {/* Show loading state while Privy is initializing */}

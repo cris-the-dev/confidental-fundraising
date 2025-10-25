@@ -32,7 +32,6 @@ export function ViewMyContribution({ campaignId }: Props) {
   } = useCampaigns();
   const { authenticated, user } = usePrivy();
 
-  // ✅ Use useCallback to make fetchStatus stable
   const fetchStatus = useCallback(async () => {
     if (!authenticated || !user?.wallet?.address) return;
 
