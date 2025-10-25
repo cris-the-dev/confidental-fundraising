@@ -48,19 +48,16 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
       }
     } catch (err: any) {
       console.error('Error fetching status:', err);
-      // Don't show error for owner-only checks
       if (!err.message?.includes('OnlyOwner')) {
         setError('Failed to fetch status');
       }
     }
   };
 
-  // Initial fetch and setup polling when status is PROCESSING
   useEffect(() => {
     if (isOwner) {
       fetchStatus();
 
-      // If processing, start polling every 5 seconds
       if (status === DecryptStatus.PROCESSING) {
         const interval = setInterval(fetchStatus, 5000);
         setPollingInterval(interval);
@@ -73,7 +70,6 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId, authenticated, isOwner, status]);
 
-  // Cleanup polling on unmount
   useEffect(() => {
     return () => {
       if (pollingInterval) {
