@@ -351,6 +351,29 @@ contract ConfidentialFundraising is
     }
 
     /**
+     * @notice Get the decryption status and cached total raised for a campaign
+     * @param campaignId The campaign ID
+     * @return status The decryption status (0=NONE, 1=PROCESSING, 2=DECRYPTED)
+     * @return totalRaised The decrypted total raised (0 if not decrypted)
+     * @return cacheExpiry The cache expiry timestamp
+     */
+    function getTotalRaisedStatus(
+        uint16 campaignId
+    ) external view onlyCampaignOwner(campaignId) returns (
+        FundraisingStruct.DecryptStatus status,
+        uint64 totalRaised,
+        uint256 cacheExpiry
+    ) {
+        status = decryptTotalRaisedStatus[campaignId];
+        FundraisingStruct.Uint64ResultWithExp memory decryptedWithExp = decryptedTotalRaised[campaignId];
+        
+        totalRaised = decryptedWithExp.data;
+        cacheExpiry = decryptedWithExp.exp;
+        
+        return (status, totalRaised, cacheExpiry);
+    }
+
+    /**
      * @notice Get the decryption status and cached contribution for a user
      * @param campaignId The campaign ID
      * @param user The user address
