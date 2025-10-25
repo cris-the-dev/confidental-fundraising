@@ -22,10 +22,6 @@ abstract contract ShareVaultStorage {
     mapping(uint256 => ShareVaultStruct.WithdrawalRequest)
         internal withdrawalRequests;
 
-    // Pending lock requests waiting for balance check
-    mapping(uint256 => ShareVaultStruct.LockRequest)
-        internal pendingLockRequests;
-
     // Campaign contract address (authorized to lock/unlock)
     address public campaignContract;
 

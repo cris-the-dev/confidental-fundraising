@@ -64,7 +64,7 @@ contract ShareVault is
         // Grant permissions
         FHE.allowThis(encryptedBalances[msg.sender]);
         FHE.allow(encryptedBalances[msg.sender], msg.sender);
-        
+
         // Only allow campaignContract if it's set
         if (campaignContract != address(0)) {
             FHE.allow(encryptedBalances[msg.sender], campaignContract);
@@ -97,9 +97,9 @@ contract ShareVault is
             available = balance;
         }
 
-        // ✅ Allow the contract to read the available balance for decryption
+        // Allow the contract to read the available balance for decryption
         FHE.allowThis(available);
-        
+
         // Request decryption
         bytes32[] memory handles = new bytes32[](1);
         handles[0] = FHE.toBytes32(available);
@@ -219,7 +219,7 @@ contract ShareVault is
 
     /**
      * @notice Lock funds for a campaign (called by campaign contract)
-     * @dev This initiates a balance check, actual locking happens in callback
+     * @dev Works with encrypted balances - no decryption required
      */
     function lockFunds(
         address user,
@@ -227,40 +227,58 @@ contract ShareVault is
         euint64 amount
     ) external onlyCampaignContract {
         euint64 balance = encryptedBalances[user];
-        euint64 locked = totalLocked[user];
 
         require(FHE.isInitialized(balance), "User has no balance");
 
-        // Calculate available balance
+        // Calculate available balance: balance - totalLocked
         euint64 available;
+        euint64 locked = totalLocked[user];
+
         if (FHE.isInitialized(locked)) {
             available = FHE.sub(balance, locked);
         } else {
             available = balance;
         }
 
-        // Use FHE comparison (returns ebool, not bool)
-        ebool hasEnough = FHE.ge(available, amount);
-        
-        // ✅ Allow the contract to read the comparison result
-        FHE.allowThis(hasEnough);
+        FHE.allowThis(available);
 
-        // Request decryption to check if user has enough
-        bytes32[] memory handles = new bytes32[](1);
-        handles[0] = FHE.toBytes32(hasEnough);
+        ebool sufficientFunds = FHE.ge(available, amount);
+        FHE.allowThis(sufficientFunds);
 
-        uint256 requestId = FHE.requestDecryption(
-            handles,
-            this.callbackCheckSufficientBalance.selector
+        // If insufficient funds, lock 0; otherwise lock the requested amount
+        euint64 safeAmount = FHE.select(
+            sufficientFunds,
+            amount,
+            FHE.asEuint64(0)
         );
 
-        pendingLockRequests[requestId] = ShareVaultStruct.LockRequest({
-            user: user,
-            campaignId: campaignId,
-            amount: amount
-        });
+        FHE.allowThis(safeAmount);
 
-        emit LockRequestInitiated(user, campaignId, requestId);
+        // Actually lock the funds
+        euint64 existingLock = lockedAmounts[user][campaignId];
+        if (FHE.isInitialized(existingLock)) {
+            lockedAmounts[user][campaignId] = FHE.add(existingLock, safeAmount);
+        } else {
+            lockedAmounts[user][campaignId] = safeAmount;
+        }
+
+        // Update total locked
+        if (FHE.isInitialized(locked)) {
+            totalLocked[user] = FHE.add(locked, safeAmount);
+        } else {
+            totalLocked[user] = safeAmount;
+        }
+
+        // Grant permissions
+        FHE.allowThis(lockedAmounts[user][campaignId]);
+        FHE.allow(lockedAmounts[user][campaignId], campaignContract);
+        FHE.allowThis(totalLocked[user]);
+
+        // Invalidate cached available balance since locked amount changed
+        delete decryptedAvailableBalance[user];
+        availableBalanceStatus[user] = CommonStruct.DecryptStatus.NONE;
+
+        emit FundsLocked(user, campaignId);
     }
 
     /**
@@ -337,8 +355,8 @@ contract ShareVault is
     /**
      * @notice Get encrypted balance for user
      */
-    function getEncryptedBalance(address user) external view returns (euint64) {
-        return encryptedBalances[user];
+    function getEncryptedBalance() external view returns (euint64) {
+        return encryptedBalances[msg.sender];
     }
 
     /**

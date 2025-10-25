@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import "../struct/FundraisingStruct.sol";
-import "../ShareVault.sol";
 import "../struct/CommonStruct.sol";
 
 abstract contract FundraisingStorage {
@@ -30,6 +29,4 @@ abstract contract FundraisingStorage {
     
     // Token claim tracking
     mapping(uint16 => mapping(address => bool)) public hasClaimedTokens;
-
-    ShareVault public immutable shareVault;
 }

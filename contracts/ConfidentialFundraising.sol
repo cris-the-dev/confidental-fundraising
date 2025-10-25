@@ -10,6 +10,7 @@ import "./storage/FundraisingStorage.sol";
 import "./interface/impl/DecryptionCallback.sol";
 import "./ShareVault.sol";
 import "./core/CampaignToken.sol";
+import "./ShareVault.sol";
 
 /**
  * @title ConfidentialFundraising
@@ -28,6 +29,8 @@ contract ConfidentialFundraising is
     using FHE for euint16;
     using FHE for euint64;
     using FHE for ebool;
+
+    ShareVault public immutable shareVault;
 
     modifier onlyCampaignOwner(uint16 campaignId) {
         if (msg.sender != campaigns[campaignId].owner) {
@@ -101,6 +104,9 @@ contract ConfidentialFundraising is
         }
 
         euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
+
+        FHE.allowThis(amount);
+        FHE.allow(amount, address(shareVault));
 
         // Lock funds in ShareVault
         shareVault.lockFunds(msg.sender, campaignId, amount);
