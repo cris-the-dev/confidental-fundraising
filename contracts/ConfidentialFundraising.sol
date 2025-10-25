@@ -4,11 +4,12 @@ pragma solidity ^0.8.24;
 import "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import "./interface/IDecryptionCallbacks.sol";
-import "./core/FundraisingStruct.sol";
 import "./interface/IFundraisingEvents.sol";
 import "./interface/IFundraisingErrors.sol";
 import "./storage/FundraisingStorage.sol";
 import "./interface/impl/DecryptionCallback.sol";
+import "./ShareVault.sol";
+import "./core/CampaignToken.sol";
 
 /**
  * @title ConfidentialFundraising
@@ -35,6 +36,10 @@ contract ConfidentialFundraising is
         _;
     }
 
+    constructor(address _shareVault) {
+        shareVault = ShareVault(_shareVault);
+    }
+
     function createCampaign(
         string calldata title,
         string calldata description,
@@ -55,7 +60,8 @@ contract ConfidentialFundraising is
             targetAmount: target,
             deadline: block.timestamp + duration,
             finalized: false,
-            cancelled: false
+            cancelled: false,
+            tokenAddress: address(0)
         });
 
         FHE.allowThis(campaigns[campaignId].totalRaised);
@@ -96,6 +102,15 @@ contract ConfidentialFundraising is
 
         euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
 
+        // Lock funds in ShareVault
+        shareVault.lockFunds(msg.sender, campaignId, amount);
+
+        // Track contributor
+        if (!hasContributed[campaignId][msg.sender]) {
+            campaignContributors[campaignId].push(msg.sender);
+            hasContributed[campaignId][msg.sender] = true;
+        }
+
         euint64 existingContribution = encryptedContributions[campaignId][
             msg.sender
         ];
@@ -118,12 +133,19 @@ contract ConfidentialFundraising is
         FHE.allowThis(newTotal);
         FHE.allow(newTotal, campaign.owner);
 
-        decryptMyContributionStatus[campaignId][msg.sender] = FundraisingStruct.DecryptStatus.NOT_STARTED;
         emit ContributionMade(campaignId, msg.sender);
     }
 
+    /**
+     * @notice Finalize campaign (owner decides token name/symbol at this point)
+     * @param campaignId Campaign ID
+     * @param tokenName Token name (if target reached)
+     * @param tokenSymbol Token symbol (if target reached)
+     */
     function finalizeCampaign(
-        uint16 campaignId
+        uint16 campaignId,
+        string calldata tokenName,
+        string calldata tokenSymbol
     ) external onlyCampaignOwner(campaignId) {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
 
@@ -143,8 +165,52 @@ contract ConfidentialFundraising is
             revert AlreadyCancelled();
         }
 
+        // Check if target was reached (need to decrypt total first)
+        // Owner must call requestTotalRaisedDecryption first, then call this function
+        CommonStruct.Uint64ResultWithExp
+            memory decryptedWithExp = decryptedTotalRaised[campaignId];
+        uint64 totalRaised = decryptedWithExp.data;
+
+        require(totalRaised > 0, "Must decrypt total raised first");
+
         campaign.finalized = true;
-        emit CampaignFinalized(campaignId, true);
+
+        if (totalRaised >= campaign.targetAmount) {
+            // TARGET REACHED - Deploy token and transfer funds
+            require(bytes(tokenName).length > 0, "Token name required");
+            require(bytes(tokenSymbol).length > 0, "Token symbol required");
+
+            // Deploy campaign token
+            CampaignToken token = new CampaignToken(
+                tokenName,
+                tokenSymbol,
+                campaignId,
+                address(this) // Campaign contract is token owner
+            );
+            campaign.tokenAddress = address(token);
+
+            // Transfer all locked funds to owner
+            address[] memory contributors = campaignContributors[campaignId];
+            for (uint256 i = 0; i < contributors.length; i++) {
+                address contributor = contributors[i];
+                shareVault.transferLockedFunds(
+                    contributor,
+                    campaign.owner,
+                    campaignId
+                );
+            }
+
+            emit CampaignFinalized(campaignId, true);
+        } else {
+            // TARGET NOT REACHED - Unlock all funds (campaign failed)
+            address[] memory contributors = campaignContributors[campaignId];
+            for (uint256 i = 0; i < contributors.length; i++) {
+                shareVault.unlockFunds(contributors[i], campaignId);
+            }
+
+            emit CampaignFailed(campaignId);
+            emit CampaignFinalized(campaignId, false);
+        }
     }
 
     function cancelCampaign(
@@ -165,9 +231,20 @@ contract ConfidentialFundraising is
         }
 
         campaign.cancelled = true;
+
+        // ✅ Unlock all funds
+        address[] memory contributors = campaignContributors[campaignId];
+        for (uint256 i = 0; i < contributors.length; i++) {
+            shareVault.unlockFunds(contributors[i], campaignId);
+        }
+
         emit CampaignCancelled(campaignId);
     }
 
+    /**
+     * @notice Claim tokens after campaign succeeded
+     * @param campaignId Campaign ID
+     */
     function claimTokens(uint16 campaignId) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
 
@@ -179,28 +256,41 @@ contract ConfidentialFundraising is
             revert CampaignNotFinalized();
         }
 
-        if (campaign.cancelled) {
-            revert AlreadyCancelled();
+        if (campaign.tokenAddress == address(0)) {
+            revert("Campaign failed - no tokens to claim");
         }
 
         if (hasClaimed[campaignId][msg.sender]) {
             revert AlreadyClaimed();
         }
 
-        euint64 userContribution = encryptedContributions[campaignId][
-            msg.sender
-        ];
+        // User must have decrypted their contribution first
+        CommonStruct.Uint64ResultWithExp
+            memory decryptedWithExp = decryptedContributions[campaignId][
+                msg.sender
+            ];
+        uint64 contributionAmount = decryptedWithExp.data;
 
-        if (!FHE.isInitialized(userContribution)) {
-            revert ContributionNotFound();
-        }
+        require(
+            contributionAmount > 0,
+            "Must decrypt your contribution first or you contributed 0"
+        );
 
-        if (!FHE.isSenderAllowed(userContribution)) {
-            revert UnauthorizedAccess();
-        }
+        // Calculate tokens based on proportion of target
+        // Formula: (userContribution / targetAmount) * 1_000_000_000 tokens
+        // To avoid precision loss: (userContribution * 1_000_000_000) / targetAmount
+
+        uint256 TOKEN_SUPPLY = 1_000_000_000 * 10 ** 18; // 1 billion tokens with 18 decimals
+        uint256 tokenAmount = (uint256(contributionAmount) * TOKEN_SUPPLY) /
+            uint256(campaign.targetAmount);
+
+        CampaignToken token = CampaignToken(campaign.tokenAddress);
+        token.mint(msg.sender, tokenAmount);
 
         hasClaimed[campaignId][msg.sender] = true;
+
         emit TokensClaimed(campaignId, msg.sender);
+        emit TokensDistributed(campaignId, msg.sender, tokenAmount);
     }
 
     function getCampaign(
@@ -244,7 +334,7 @@ contract ConfidentialFundraising is
 
         if (
             decryptMyContributionStatus[campaignId][msg.sender] ==
-            FundraisingStruct.DecryptStatus.PROCESSING
+            CommonStruct.DecryptStatus.PROCESSING
         ) {
             revert DecryptAlreadyInProgress();
         }
@@ -265,7 +355,7 @@ contract ConfidentialFundraising is
                 campaignId: campaignId
             });
 
-        decryptMyContributionStatus[campaignId][msg.sender] = FundraisingStruct
+        decryptMyContributionStatus[campaignId][msg.sender] = CommonStruct
             .DecryptStatus
             .PROCESSING;
     }
@@ -273,7 +363,7 @@ contract ConfidentialFundraising is
     function getMyContribution(
         uint16 campaignId
     ) external view returns (uint64) {
-        FundraisingStruct.Uint64ResultWithExp
+        CommonStruct.Uint64ResultWithExp
             memory decryptedWithExp = decryptedContributions[campaignId][
                 msg.sender
             ];
@@ -290,7 +380,7 @@ contract ConfidentialFundraising is
 
         if (
             decryptMyContributionStatus[campaignId][msg.sender] ==
-            FundraisingStruct.DecryptStatus.PROCESSING
+            CommonStruct.DecryptStatus.PROCESSING
         ) {
             revert DataProcessing();
         }
@@ -303,7 +393,7 @@ contract ConfidentialFundraising is
     ) public onlyCampaignOwner(campaignId) {
         if (
             decryptMyContributionStatus[campaignId][msg.sender] ==
-            FundraisingStruct.DecryptStatus.PROCESSING
+            CommonStruct.DecryptStatus.PROCESSING
         ) {
             revert DecryptAlreadyInProgress();
         }
@@ -319,7 +409,7 @@ contract ConfidentialFundraising is
         );
 
         decryptTotalRaisedRequest[requestId] = campaignId;
-        decryptTotalRaisedStatus[campaignId] = FundraisingStruct
+        decryptTotalRaisedStatus[campaignId] = CommonStruct
             .DecryptStatus
             .PROCESSING;
     }
@@ -327,7 +417,7 @@ contract ConfidentialFundraising is
     function getTotalRaised(
         uint16 campaignId
     ) external view onlyCampaignOwner(campaignId) returns (uint64) {
-        FundraisingStruct.Uint64ResultWithExp
+        CommonStruct.Uint64ResultWithExp
             memory decryptedWithExp = decryptedTotalRaised[campaignId];
 
         uint64 decryptedTotalRaised = decryptedWithExp.data;
@@ -342,7 +432,7 @@ contract ConfidentialFundraising is
 
         if (
             decryptTotalRaisedStatus[campaignId] ==
-            FundraisingStruct.DecryptStatus.PROCESSING
+            CommonStruct.DecryptStatus.PROCESSING
         ) {
             revert DataProcessing();
         }
@@ -359,17 +449,23 @@ contract ConfidentialFundraising is
      */
     function getTotalRaisedStatus(
         uint16 campaignId
-    ) external view onlyCampaignOwner(campaignId) returns (
-        FundraisingStruct.DecryptStatus status,
-        uint64 totalRaised,
-        uint256 cacheExpiry
-    ) {
+    )
+        external
+        view
+        onlyCampaignOwner(campaignId)
+        returns (
+            CommonStruct.DecryptStatus status,
+            uint64 totalRaised,
+            uint256 cacheExpiry
+        )
+    {
         status = decryptTotalRaisedStatus[campaignId];
-        FundraisingStruct.Uint64ResultWithExp memory decryptedWithExp = decryptedTotalRaised[campaignId];
-        
+        CommonStruct.Uint64ResultWithExp
+            memory decryptedWithExp = decryptedTotalRaised[campaignId];
+
         totalRaised = decryptedWithExp.data;
         cacheExpiry = decryptedWithExp.exp;
-        
+
         return (status, totalRaised, cacheExpiry);
     }
 
@@ -384,17 +480,22 @@ contract ConfidentialFundraising is
     function getContributionStatus(
         uint16 campaignId,
         address user
-    ) external view returns (
-        FundraisingStruct.DecryptStatus status,
-        uint64 contribution,
-        uint256 cacheExpiry
-    ) {
+    )
+        external
+        view
+        returns (
+            CommonStruct.DecryptStatus status,
+            uint64 contribution,
+            uint256 cacheExpiry
+        )
+    {
         status = decryptMyContributionStatus[campaignId][user];
-        FundraisingStruct.Uint64ResultWithExp memory decryptedWithExp = decryptedContributions[campaignId][user];
-        
+        CommonStruct.Uint64ResultWithExp
+            memory decryptedWithExp = decryptedContributions[campaignId][user];
+
         contribution = decryptedWithExp.data;
         cacheExpiry = decryptedWithExp.exp;
-        
+
         return (status, contribution, cacheExpiry);
     }
 
@@ -409,5 +510,11 @@ contract ConfidentialFundraising is
         address user
     ) external view returns (bool) {
         return FHE.isInitialized(encryptedContributions[campaignId][user]);
+    }
+
+    function getCampaignContributors(
+        uint16 campaignId
+    ) external view returns (address[] memory) {
+        return campaignContributors[campaignId];
     }
 }
