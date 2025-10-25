@@ -8,6 +8,7 @@ import "./core/FundraisingStruct.sol";
 import "./interface/IFundraisingEvents.sol";
 import "./interface/IFundraisingErrors.sol";
 import "./storage/FundraisingStorage.sol";
+import "./interface/impl/DecryptionCallback.sol";
 
 /**
  * @title ConfidentialFundraising
@@ -20,10 +21,11 @@ contract ConfidentialFundraising is
     SepoliaConfig,
     IFundraisingEvents,
     IFundraisingErrors,
-    FundraisingStorage
+    FundraisingStorage,
+    DecryptionCallbacks
 {
     using FHE for euint16;
-    using FHE for euint8;
+    using FHE for euint64;
     using FHE for ebool;
 
     modifier onlyCampaignOwner(uint16 campaignId) {
@@ -36,7 +38,7 @@ contract ConfidentialFundraising is
     function createCampaign(
         string calldata title,
         string calldata description,
-        uint8 target,
+        uint64 target,
         uint256 duration
     ) external returns (uint256) {
         require(target > 0, "Target must be greater than 0");
@@ -49,7 +51,7 @@ contract ConfidentialFundraising is
             owner: msg.sender,
             title: title,
             description: description,
-            totalRaised: FHE.asEuint8(0),
+            totalRaised: FHE.asEuint64(0),
             targetAmount: target,
             deadline: block.timestamp + duration,
             finalized: false,
@@ -71,12 +73,12 @@ contract ConfidentialFundraising is
 
     function contribute(
         uint16 campaignId,
-        externalEuint8 encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
 
-        if (campaignId > campaignCount) {
+        if (campaignId >= campaignCount) {
             revert CampaignNotExist();
         }
 
@@ -92,13 +94,13 @@ contract ConfidentialFundraising is
             revert AlreadyCancelled();
         }
 
-        euint8 amount = FHE.fromExternal(encryptedAmount, inputProof);
+        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
 
-        euint8 existingContribution = encryptedContributions[campaignId][
+        euint64 existingContribution = encryptedContributions[campaignId][
             msg.sender
         ];
 
-        euint8 newContribution;
+        euint64 newContribution;
         if (FHE.isInitialized(existingContribution)) {
             newContribution = FHE.add(existingContribution, amount);
         } else {
@@ -110,12 +112,13 @@ contract ConfidentialFundraising is
         FHE.allowThis(newContribution);
         FHE.allow(newContribution, msg.sender);
 
-        euint8 newTotal = FHE.add(campaign.totalRaised, amount);
+        euint64 newTotal = FHE.add(campaign.totalRaised, amount);
         campaign.totalRaised = newTotal;
 
         FHE.allowThis(newTotal);
         FHE.allow(newTotal, campaign.owner);
 
+        decryptMyContributionStatus[campaignId][msg.sender] = FundraisingStruct.DecryptStatus.NOT_STARTED;
         emit ContributionMade(campaignId, msg.sender);
     }
 
@@ -124,7 +127,7 @@ contract ConfidentialFundraising is
     ) external onlyCampaignOwner(campaignId) {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
 
-        if (campaignId > campaignCount) {
+        if (campaignId >= campaignCount) {
             revert CampaignNotExist();
         }
 
@@ -149,7 +152,7 @@ contract ConfidentialFundraising is
     ) external onlyCampaignOwner(campaignId) {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
 
-        if (campaignId > campaignCount) {
+        if (campaignId >= campaignCount) {
             revert CampaignNotExist();
         }
 
@@ -168,7 +171,7 @@ contract ConfidentialFundraising is
     function claimTokens(uint16 campaignId) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
 
-        if (campaignId > campaignCount) {
+        if (campaignId >= campaignCount) {
             revert CampaignNotExist();
         }
 
@@ -184,7 +187,7 @@ contract ConfidentialFundraising is
             revert AlreadyClaimed();
         }
 
-        euint8 userContribution = encryptedContributions[campaignId][
+        euint64 userContribution = encryptedContributions[campaignId][
             msg.sender
         ];
 
@@ -209,13 +212,13 @@ contract ConfidentialFundraising is
             address owner,
             string memory title,
             string memory description,
-            uint8 targetAmount,
+            uint64 targetAmount,
             uint256 deadline,
             bool finalized,
             bool cancelled
         )
     {
-        if (campaignId > campaignCount) {
+        if (campaignId >= campaignCount) {
             revert CampaignNotExist();
         }
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
@@ -232,6 +235,20 @@ contract ConfidentialFundraising is
     }
 
     function requestMyContributionDecryption(uint16 campaignId) public {
+        euint64 userContribution = encryptedContributions[campaignId][
+            msg.sender
+        ];
+        if (!FHE.isInitialized(userContribution)) {
+            revert ContributionNotFound();
+        }
+
+        if (
+            decryptMyContributionStatus[campaignId][msg.sender] ==
+            FundraisingStruct.DecryptStatus.PROCESSING
+        ) {
+            revert DecryptAlreadyInProgress();
+        }
+
         bytes32[] memory handles = new bytes32[](1);
         handles[0] = FHE.toBytes32(
             encryptedContributions[campaignId][msg.sender]
@@ -255,27 +272,42 @@ contract ConfidentialFundraising is
 
     function getMyContribution(
         uint16 campaignId
-    ) external view returns (uint8) {
-        FundraisingStruct.Uint8ResultWithExp memory decryptedWithExp = decryptedContributions[campaignId][msg.sender];
+    ) external view returns (uint64) {
+        FundraisingStruct.Uint64ResultWithExp
+            memory decryptedWithExp = decryptedContributions[campaignId][
+                msg.sender
+            ];
 
-        uint8 decryptedContribution = decryptedWithExp.data;
+        uint64 decryptedContribution = decryptedWithExp.data;
         uint256 expTime = decryptedWithExp.exp;
 
         if (decryptedContribution != 0) {
-            if (expTime > block.timestamp) {
+            if (expTime < block.timestamp) {
                 revert CacheExpired();
             }
             return decryptedContribution;
         }
 
-        if (decryptMyContributionStatus[campaignId][msg.sender] == FundraisingStruct.DecryptStatus.PROCESSING) {
+        if (
+            decryptMyContributionStatus[campaignId][msg.sender] ==
+            FundraisingStruct.DecryptStatus.PROCESSING
+        ) {
             revert DataProcessing();
         }
 
         revert MyContributionNotDecrypted();
     }
 
-    function requestTotalRaisedDecryption(uint16 campaignId) onlyCampaignOwner(campaignId) public {
+    function requestTotalRaisedDecryption(
+        uint16 campaignId
+    ) public onlyCampaignOwner(campaignId) {
+        if (
+            decryptMyContributionStatus[campaignId][msg.sender] ==
+            FundraisingStruct.DecryptStatus.PROCESSING
+        ) {
+            revert DecryptAlreadyInProgress();
+        }
+
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
 
         bytes32[] memory handles = new bytes32[](1);
@@ -287,26 +319,72 @@ contract ConfidentialFundraising is
         );
 
         decryptTotalRaisedRequest[requestId] = campaignId;
-        decryptTotalRaisedStatus[campaignId] = FundraisingStruct.DecryptStatus.PROCESSING;
+        decryptTotalRaisedStatus[campaignId] = FundraisingStruct
+            .DecryptStatus
+            .PROCESSING;
     }
 
-    function getTotalRaised(uint16 campaignId) onlyCampaignOwner(campaignId) external view returns (uint8) {
-        FundraisingStruct.Uint8ResultWithExp memory decryptedWithExp = decryptedTotalRaised[campaignId];
+    function getTotalRaised(
+        uint16 campaignId
+    ) external view onlyCampaignOwner(campaignId) returns (uint64) {
+        FundraisingStruct.Uint64ResultWithExp
+            memory decryptedWithExp = decryptedTotalRaised[campaignId];
 
-        uint8 decryptedTotalRaised = decryptedWithExp.data;
+        uint64 decryptedTotalRaised = decryptedWithExp.data;
         uint256 expTime = decryptedWithExp.exp;
 
         if (decryptedTotalRaised != 0) {
-            if (expTime > block.timestamp) {
+            if (expTime < block.timestamp) {
                 revert CacheExpired();
             }
             return decryptedTotalRaised;
         }
 
-        if (decryptTotalRaisedStatus[campaignId] == FundraisingStruct.DecryptStatus.PROCESSING) {
+        if (
+            decryptTotalRaisedStatus[campaignId] ==
+            FundraisingStruct.DecryptStatus.PROCESSING
+        ) {
             revert DataProcessing();
         }
 
         revert TotalRaisedNotDecrypted();
+    }
+
+    /**
+     * @notice Get the decryption status and cached contribution for a user
+     * @param campaignId The campaign ID
+     * @param user The user address
+     * @return status The decryption status (0=NONE, 1=PROCESSING, 2=DECRYPTED)
+     * @return contribution The decrypted contribution (0 if not decrypted)
+     * @return cacheExpiry The cache expiry timestamp
+     */
+    function getContributionStatus(
+        uint16 campaignId,
+        address user
+    ) external view returns (
+        FundraisingStruct.DecryptStatus status,
+        uint64 contribution,
+        uint256 cacheExpiry
+    ) {
+        status = decryptMyContributionStatus[campaignId][user];
+        FundraisingStruct.Uint64ResultWithExp memory decryptedWithExp = decryptedContributions[campaignId][user];
+        
+        contribution = decryptedWithExp.data;
+        cacheExpiry = decryptedWithExp.exp;
+        
+        return (status, contribution, cacheExpiry);
+    }
+
+    /**
+     * @notice Check if user has any contribution to a campaign
+     * @param campaignId The campaign ID
+     * @param user The user address
+     * @return hasContribution True if user has contributed
+     */
+    function hasContribution(
+        uint16 campaignId,
+        address user
+    ) external view returns (bool) {
+        return FHE.isInitialized(encryptedContributions[campaignId][user]);
     }
 }

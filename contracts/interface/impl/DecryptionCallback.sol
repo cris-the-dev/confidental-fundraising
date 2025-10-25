@@ -17,11 +17,11 @@ contract DecryptionCallbacks is IDecryptionCallbacks, FundraisingStorage {
     ) external override {
         FHE.checkSignatures(requestId, cleartexts, decryptionProof);
 
-        uint8 contributedAmount = EncryptedHelper.decodeUserContribution(
+        uint64 contributedAmount = EncryptedHelper.decodeUserContribution(
             cleartexts
         );
         FundraisingStruct.DecryptUserContributionRequest memory request = decryptMyContributionRequest[requestId];
-        decryptedContributions[request.campaignId][request.userAddress] = FundraisingStruct.Uint8ResultWithExp({
+        decryptedContributions[request.campaignId][request.userAddress] = FundraisingStruct.Uint64ResultWithExp({
             data: contributedAmount,
             exp: block.timestamp + cacheTimeout
         });
@@ -29,7 +29,7 @@ contract DecryptionCallbacks is IDecryptionCallbacks, FundraisingStorage {
         delete decryptMyContributionRequest[requestId];
 
         decryptMyContributionStatus[request.campaignId][
-            msg.sender
+            request.userAddress
         ] = FundraisingStruct.DecryptStatus.DECRYPTED;
     }
 
@@ -42,10 +42,10 @@ contract DecryptionCallbacks is IDecryptionCallbacks, FundraisingStorage {
 
         uint16 campaignId = decryptTotalRaisedRequest[requestId];
 
-        uint8 totalRaised = EncryptedHelper.decodeTotalRaised(
+        uint64 totalRaised = EncryptedHelper.decodeTotalRaised(
             cleartexts
         );
-        decryptedTotalRaised[campaignId] = FundraisingStruct.Uint8ResultWithExp({
+        decryptedTotalRaised[campaignId] = FundraisingStruct.Uint64ResultWithExp({
             data: totalRaised,
             exp: block.timestamp + cacheTimeout
         });

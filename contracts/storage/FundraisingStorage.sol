@@ -10,10 +10,10 @@ abstract contract FundraisingStorage {
 
     mapping(uint16 => mapping(address => bool)) public hasClaimed;
 
-    mapping(uint16 => mapping(address => euint8)) internal encryptedContributions;
-    mapping(uint16 => mapping(address => FundraisingStruct.Uint8ResultWithExp)) internal decryptedContributions;
+    mapping(uint16 => mapping(address => euint64)) internal encryptedContributions;
+    mapping(uint16 => mapping(address => FundraisingStruct.Uint64ResultWithExp)) internal decryptedContributions;
 
-    mapping(uint16 => FundraisingStruct.Uint8ResultWithExp) internal decryptedTotalRaised;
+    mapping(uint16 => FundraisingStruct.Uint64ResultWithExp) internal decryptedTotalRaised;
     mapping(uint256 => uint16) internal decryptTotalRaisedRequest;
     mapping(uint16 => FundraisingStruct.DecryptStatus) internal decryptTotalRaisedStatus;
 

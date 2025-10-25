@@ -16,4 +16,5 @@ interface IFundraisingErrors {
     error TotalRaisedNotDecrypted();
     error MyContributionNotDecrypted();
     error CacheExpired();
+    error DecryptAlreadyInProgress();
 }

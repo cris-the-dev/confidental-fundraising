@@ -5,6 +5,7 @@ import "@fhevm/solidity/lib/FHE.sol";
 
 library FundraisingStruct {
     enum DecryptStatus {
+        NOT_STARTED,
         PROCESSING,
         DECRYPTED
     }
@@ -13,8 +14,8 @@ library FundraisingStruct {
         address owner;
         string title;
         string description;
-        euint8 totalRaised;
-        uint8 targetAmount;
+        euint64 totalRaised;
+        uint64 targetAmount;
         uint256 deadline;
         bool finalized;
         bool cancelled;
@@ -25,8 +26,8 @@ library FundraisingStruct {
         uint16 campaignId;
     }
 
-    struct Uint8ResultWithExp {
-        uint8 data;
+    struct Uint64ResultWithExp {
+        uint64 data;
         uint256 exp; // Data exp time
     }
 }
