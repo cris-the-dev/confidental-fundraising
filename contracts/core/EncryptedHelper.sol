@@ -24,6 +24,17 @@ library EncryptedHelper {
         return (totalRaised);
     }
 
+    function decodeAvailableBalance(
+        bytes memory cleartexts
+    ) internal pure returns (uint64 contributedAmount) {
+        assembly {
+            let dataPtr := add(cleartexts, 0x20)
+            contributedAmount := mload(dataPtr)
+        }
+
+        return (contributedAmount);
+    }
+
     function decodeBool(
         bytes memory cleartexts
     ) internal pure returns (bool value) {
@@ -32,7 +43,7 @@ library EncryptedHelper {
             let rawValue := mload(dataPtr)
             value := gt(rawValue, 0)
         }
-        return value;
+        return (value);
     }
 
     /**
@@ -45,6 +56,6 @@ library EncryptedHelper {
             let dataPtr := add(cleartexts, 0x20)
             value := mload(dataPtr)
         }
-        return value;
+        return (value);
     }
 }

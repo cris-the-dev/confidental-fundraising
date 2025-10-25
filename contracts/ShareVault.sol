@@ -3,11 +3,13 @@ pragma solidity ^0.8.24;
 
 import "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import "./interface/IWalletCallbacks.sol";
+import "./interface/IDecryptionCallbacks.sol";
 import "./struct/CommonStruct.sol";
 import "./struct/ShareVaultStruct.sol";
 import "./interface/IShareVaultErrors.sol";
 import "./interface/IShareVaultEvents.sol";
+import "./core/EncryptedHelper.sol";
+import "./interface/impl/DecryptionCallback.sol";
 
 /**
  * @title ShareVault
@@ -15,39 +17,13 @@ import "./interface/IShareVaultEvents.sol";
  */
 contract ShareVault is
     SepoliaConfig,
-    IWalletCallbacks,
     IShareVaultEvents,
-    IShareVaultErrors
+    IShareVaultErrors,
+    ShareVaultStorage,
+    DecryptionCallbacks
 {
     using FHE for euint64;
     using FHE for ebool;
-
-    // User balances (encrypted)
-    mapping(address => euint64) private encryptedBalances;
-
-    // Locked amounts per user per campaign (encrypted)
-    mapping(address => mapping(uint16 => euint64)) private lockedAmounts;
-
-    // Total locked per user (encrypted)
-    mapping(address => euint64) private totalLocked;
-
-    // Decryption status and cached available balance
-    mapping(address => CommonStruct.DecryptStatus)
-        private availableBalanceStatus;
-    mapping(address => CommonStruct.Uint64ResultWithExp)
-        private decryptedAvailableBalance;
-    mapping(uint256 => ShareVaultStruct.WithdrawalRequest)
-        private withdrawalRequests;
-
-    // Pending lock requests waiting for balance check
-    mapping(uint256 => ShareVaultStruct.LockRequest)
-        private pendingLockRequests;
-
-    // Campaign contract address (authorized to lock/unlock)
-    address public campaignContract;
-
-    // Cache timeout (10 minutes)
-    uint256 public constant CACHE_TIMEOUT = 600;
 
     modifier onlyCampaignContract() {
         if (msg.sender != campaignContract) {
@@ -88,7 +64,11 @@ contract ShareVault is
         // Grant permissions
         FHE.allowThis(encryptedBalances[msg.sender]);
         FHE.allow(encryptedBalances[msg.sender], msg.sender);
-        FHE.allow(encryptedBalances[msg.sender], campaignContract);
+        
+        // Only allow campaignContract if it's set
+        if (campaignContract != address(0)) {
+            FHE.allow(encryptedBalances[msg.sender], campaignContract);
+        }
 
         emit Deposited(msg.sender, msg.value);
     }
@@ -117,13 +97,16 @@ contract ShareVault is
             available = balance;
         }
 
+        // ✅ Allow the contract to read the available balance for decryption
+        FHE.allowThis(available);
+        
         // Request decryption
         bytes32[] memory handles = new bytes32[](1);
         handles[0] = FHE.toBytes32(available);
 
         uint256 requestId = FHE.requestDecryption(
             handles,
-            IWalletCallbacks.callbackDecryptAvailableBalance.selector
+            this.callbackDecryptAvailableBalance.selector
         );
 
         withdrawalRequests[requestId] = ShareVaultStruct.WithdrawalRequest({
@@ -138,50 +121,6 @@ contract ShareVault is
     }
 
     /**
-     * @notice Callback for available balance decryption
-     */
-    function callbackDecryptAvailableBalance(
-        uint256 requestId,
-        bytes memory cleartexts,
-        bytes memory decryptionProof
-    ) external override {
-        FHE.checkSignatures(requestId, cleartexts, decryptionProof);
-
-        uint64 availableAmount = _decodeUint64(cleartexts);
-
-        ShareVaultStruct.WithdrawalRequest memory request = withdrawalRequests[
-            requestId
-        ];
-
-        decryptedAvailableBalance[request.userAddress] = CommonStruct
-            .Uint64ResultWithExp({
-                data: availableAmount,
-                exp: block.timestamp + CACHE_TIMEOUT
-            });
-
-        delete withdrawalRequests[requestId];
-
-        availableBalanceStatus[request.userAddress] = CommonStruct
-            .DecryptStatus
-            .DECRYPTED;
-
-        emit AvailableBalanceDecrypted(request.userAddress, availableAmount);
-    }
-
-    /**
-     * @notice Decode uint64 from cleartext
-     */
-    function _decodeUint64(
-        bytes memory cleartexts
-    ) internal pure returns (uint64 value) {
-        assembly {
-            let dataPtr := add(cleartexts, 0x20)
-            value := mload(dataPtr)
-        }
-        return value;
-    }
-
-    /**
      * @notice Get available balance (must decrypt first)
      */
     function getAvailableBalance() external view returns (uint64) {
@@ -191,29 +130,29 @@ contract ShareVault is
         uint64 available = decryptedWithExp.data;
         uint256 expTime = decryptedWithExp.exp;
 
-        if (available != 0 || expTime != 0) {
-            if (expTime < block.timestamp) {
-                revert DecryptionCacheExpired();
+        // Check if never decrypted
+        if (expTime == 0) {
+            if (
+                availableBalanceStatus[msg.sender] ==
+                CommonStruct.DecryptStatus.PROCESSING
+            ) {
+                revert DecryptionProcessing();
             }
-            return available;
+            revert MustDecryptFirst();
         }
 
-        if (
-            availableBalanceStatus[msg.sender] ==
-            CommonStruct.DecryptStatus.PROCESSING
-        ) {
-            revert DecryptionProcessing();
+        // Check if expired
+        if (expTime < block.timestamp) {
+            revert DecryptionCacheExpired();
         }
 
-        revert MustDecryptFirst();
+        return available;
     }
 
     /**
      * @notice Get available balance status
      */
-    function getAvailableBalanceStatus(
-        address user
-    )
+    function getAvailableBalanceStatus()
         external
         view
         returns (
@@ -222,9 +161,9 @@ contract ShareVault is
             uint256 cacheExpiry
         )
     {
-        status = availableBalanceStatus[user];
+        status = availableBalanceStatus[msg.sender];
         CommonStruct.Uint64ResultWithExp
-            memory decryptedWithExp = decryptedAvailableBalance[user];
+            memory decryptedWithExp = decryptedAvailableBalance[msg.sender];
 
         availableAmount = decryptedWithExp.data;
         cacheExpiry = decryptedWithExp.exp;
@@ -245,7 +184,7 @@ contract ShareVault is
         uint64 available = decryptedWithExp.data;
         uint256 expTime = decryptedWithExp.exp;
 
-        if (available == 0 && expTime == 0) {
+        if (expTime == 0) {
             if (
                 availableBalanceStatus[msg.sender] ==
                 CommonStruct.DecryptStatus.PROCESSING
@@ -300,8 +239,11 @@ contract ShareVault is
             available = balance;
         }
 
-        // ✅ Use FHE comparison (returns ebool, not bool)
+        // Use FHE comparison (returns ebool, not bool)
         ebool hasEnough = FHE.ge(available, amount);
+        
+        // ✅ Allow the contract to read the comparison result
+        FHE.allowThis(hasEnough);
 
         // Request decryption to check if user has enough
         bytes32[] memory handles = new bytes32[](1);
@@ -309,7 +251,7 @@ contract ShareVault is
 
         uint256 requestId = FHE.requestDecryption(
             handles,
-            IWalletCallbacks.callbackCheckSufficientBalance.selector
+            this.callbackCheckSufficientBalance.selector
         );
 
         pendingLockRequests[requestId] = ShareVaultStruct.LockRequest({
@@ -319,81 +261,6 @@ contract ShareVault is
         });
 
         emit LockRequestInitiated(user, campaignId, requestId);
-    }
-
-    /**
-     * @notice Callback to verify sufficient balance and complete locking
-     */
-    function callbackCheckSufficientBalance(
-        uint256 requestId,
-        bytes memory cleartexts,
-        bytes memory decryptionProof
-    ) external override {
-        FHE.checkSignatures(requestId, cleartexts, decryptionProof);
-
-        // Decode boolean result
-        bool hasEnough = _decodeBool(cleartexts);
-
-        require(hasEnough, "Insufficient available balance");
-
-        ShareVaultStruct.LockRequest memory lockRequest = pendingLockRequests[
-            requestId
-        ];
-
-        // Now actually lock the funds
-        euint64 existingLock = lockedAmounts[lockRequest.user][
-            lockRequest.campaignId
-        ];
-        if (FHE.isInitialized(existingLock)) {
-            lockedAmounts[lockRequest.user][lockRequest.campaignId] = FHE.add(
-                existingLock,
-                lockRequest.amount
-            );
-        } else {
-            lockedAmounts[lockRequest.user][
-                lockRequest.campaignId
-            ] = lockRequest.amount;
-        }
-
-        // Update total locked
-        euint64 locked = totalLocked[lockRequest.user];
-        if (FHE.isInitialized(locked)) {
-            totalLocked[lockRequest.user] = FHE.add(locked, lockRequest.amount);
-        } else {
-            totalLocked[lockRequest.user] = lockRequest.amount;
-        }
-
-        // Grant permissions
-        FHE.allowThis(lockedAmounts[lockRequest.user][lockRequest.campaignId]);
-        FHE.allow(
-            lockedAmounts[lockRequest.user][lockRequest.campaignId],
-            campaignContract
-        );
-        FHE.allowThis(totalLocked[lockRequest.user]);
-
-        // Invalidate cached available balance since locked amount changed
-        delete decryptedAvailableBalance[lockRequest.user];
-        availableBalanceStatus[lockRequest.user] = CommonStruct
-            .DecryptStatus
-            .NONE;
-
-        delete pendingLockRequests[requestId];
-
-        emit FundsLocked(lockRequest.user, lockRequest.campaignId);
-    }
-
-    /**
-     * @notice Decode boolean from cleartext
-     */
-    function _decodeBool(
-        bytes memory cleartexts
-    ) internal pure returns (bool value) {
-        assembly {
-            let dataPtr := add(cleartexts, 0x20)
-            let rawValue := mload(dataPtr)
-            value := gt(rawValue, 0)
-        }
-        return value;
     }
 
     /**
@@ -442,7 +309,10 @@ contract ShareVault is
         // Add to owner's balance
         euint64 ownerBalance = encryptedBalances[campaignOwner];
         if (FHE.isInitialized(ownerBalance)) {
-            encryptedBalances[campaignOwner] = FHE.add(ownerBalance, lockedAmount);
+            encryptedBalances[campaignOwner] = FHE.add(
+                ownerBalance,
+                lockedAmount
+            );
         } else {
             encryptedBalances[campaignOwner] = lockedAmount;
         }
@@ -475,16 +345,15 @@ contract ShareVault is
      * @notice Get encrypted locked amount for campaign
      */
     function getLockedAmount(
-        address user,
         uint16 campaignId
     ) external view returns (euint64) {
-        return lockedAmounts[user][campaignId];
+        return lockedAmounts[msg.sender][campaignId];
     }
 
     /**
      * @notice Get total encrypted locked for user
      */
-    function getTotalLocked(address user) external view returns (euint64) {
-        return totalLocked[user];
+    function getTotalLocked() external view returns (euint64) {
+        return totalLocked[msg.sender];
     }
 }

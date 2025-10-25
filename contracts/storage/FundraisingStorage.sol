@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "../struct/FundraisingStruct.sol";
 import "../ShareVault.sol";
+import "../struct/CommonStruct.sol";
 
 abstract contract FundraisingStorage {
     uint256 cacheTimeout = 600; // 10 mins cache
