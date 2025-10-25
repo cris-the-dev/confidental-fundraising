@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useFhevm } from '../../contexts/FhevmContext';
@@ -18,6 +18,12 @@ export default function ContributeForm({ campaignId, onSuccess }: ContributeForm
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
+    const [executing, setExecuting] = useState(loading);
+
+    useEffect(() => {
+        setExecuting(loading);
+    }, [loading]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -31,12 +37,20 @@ export default function ContributeForm({ campaignId, onSuccess }: ContributeForm
             return;
         }
 
-        if (!amount || parseFloat(amount) <= 0) {
-            setError('Please enter a valid amount');
+        const amountNum = parseFloat(amount);
+        
+        if (!amount || amountNum <= 0) {
+            setError('Please enter a valid amount greater than 0');
+            return;
+        }
+
+        if (amountNum > 18.4) {
+            setError('Amount too large. Maximum is ~18.4 ETH (uint64 limit)');
             return;
         }
 
         try {
+            setExecuting(true);
             setError(null);
             setSuccess(false);
 
@@ -97,13 +111,17 @@ export default function ContributeForm({ campaignId, onSuccess }: ContributeForm
                     <input
                         type="number"
                         step="0.001"
-                        min="0"
+                        min="0.001"
+                        max="18"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder="0.1"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        disabled={loading || fhevmLoading || !isInitialized}
+                        disabled={executing || fhevmLoading || !isInitialized}
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                        Supports decimals (e.g., 0.1 ETH). Max ~18.4 ETH (uint64 limit)
+                    </p>
                 </div>
 
                 {error && (
@@ -122,10 +140,10 @@ export default function ContributeForm({ campaignId, onSuccess }: ContributeForm
 
                 <button
                     type="submit"
-                    disabled={loading || fhevmLoading || !isInitialized}
+                    disabled={executing || fhevmLoading || !isInitialized}
                     className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {loading ? (
+                    {executing ? (
                         <span className="flex items-center justify-center">
                             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -148,7 +166,7 @@ export default function ContributeForm({ campaignId, onSuccess }: ContributeForm
             <div className="mt-4 pt-4 border-t border-gray-200">
                 <p className="text-xs text-gray-500">
                     🔐 Privacy guaranteed: Your contribution amount is encrypted end-to-end
-                    using fully homomorphic encryption (FHE).
+                    using fully homomorphic encryption (FHE). Values are stored as Wei (1 ETH = 10^18 Wei).
                 </p>
             </div>
         </div>

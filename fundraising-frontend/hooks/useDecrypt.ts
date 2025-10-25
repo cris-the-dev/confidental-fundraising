@@ -27,7 +27,6 @@ export const useDecrypt = () => {
         throw new Error("Wallet not connected");
       }
 
-      // ✅ Handle zero or uninitialized values
       if (handle === 0n) {
         console.log("⚠️ Handle is 0, returning 0");
         return 0n;
@@ -69,11 +68,9 @@ export const useDecrypt = () => {
         });
 
         console.log("🔄 Reencrypting...");
-        
-        // ✅ CRITICAL FIX: Convert handle to proper format
-        // The FHEVM library expects handles as a string or number in some versions
+
         const decryptedValue = await instance.reencrypt(
-          handle, // Keep as bigint - the library should handle it
+          handle,
           privateKey,
           publicKey,
           signature.replace("0x", ""),
@@ -82,17 +79,15 @@ export const useDecrypt = () => {
         );
 
         console.log("✅ Decryption successful:", decryptedValue);
-        
-        // ✅ Handle different return types from reencrypt
-        // Sometimes it returns a string, sometimes a number
-        if (typeof decryptedValue === 'string') {
+
+        if (typeof decryptedValue === "string") {
           return BigInt(decryptedValue);
-        } else if (typeof decryptedValue === 'number') {
+        } else if (typeof decryptedValue === "number") {
           return BigInt(decryptedValue);
-        } else if (typeof decryptedValue === 'bigint') {
+        } else if (typeof decryptedValue === "bigint") {
           return decryptedValue;
         }
-        
+
         return BigInt(decryptedValue);
       } catch (err) {
         console.error("❌ Decryption error:", err);

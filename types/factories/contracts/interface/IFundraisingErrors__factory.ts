@@ -26,6 +26,11 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "CacheExpired",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "CampaignEnded",
     type: "error",
   },
@@ -52,6 +57,11 @@ const _abi = [
   {
     inputs: [],
     name: "DataProcessing",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "DecryptAlreadyInProgress",
     type: "error",
   },
   {

@@ -7,7 +7,6 @@ export default function LoadingWrapper({ children }: { children: React.ReactNode
     const { ready: privyReady } = usePrivy();
     const { isLoading: fhevmLoading, error: fhevmError } = useFhevm();
 
-    // Show loading screen while Privy is initializing
     if (!privyReady) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -24,7 +23,6 @@ export default function LoadingWrapper({ children }: { children: React.ReactNode
         );
     }
 
-    // Show loading screen while FHEVM is initializing
     if (fhevmLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -46,7 +44,6 @@ export default function LoadingWrapper({ children }: { children: React.ReactNode
         );
     }
 
-    // Show error screen if FHEVM failed to initialize
     if (fhevmError) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">

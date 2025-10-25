@@ -48,14 +48,14 @@ const _abi = [
         type: "string",
       },
       {
-        internalType: "euint8",
+        internalType: "euint64",
         name: "totalRaised",
         type: "bytes32",
       },
       {
-        internalType: "uint8",
+        internalType: "uint64",
         name: "targetAmount",
-        type: "uint8",
+        type: "uint64",
       },
       {
         internalType: "uint256",

@@ -26,6 +26,8 @@ import type {
 export interface ConfidentialFundraisingInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "callbackDecryptMyContribution"
+      | "callbackDecryptTotalRaised"
       | "campaignCount"
       | "campaigns"
       | "cancelCampaign"
@@ -48,9 +50,18 @@ export interface ConfidentialFundraisingInterface extends Interface {
       | "CampaignCreated"
       | "CampaignFinalized"
       | "ContributionMade"
+      | "DecryptionFulfilled"
       | "TokensClaimed"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "callbackDecryptMyContribution",
+    values: [BigNumberish, BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "callbackDecryptTotalRaised",
+    values: [BigNumberish, BytesLike, BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "campaignCount",
     values?: undefined
@@ -108,6 +119,14 @@ export interface ConfidentialFundraisingInterface extends Interface {
     values: [BigNumberish]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "callbackDecryptMyContribution",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "callbackDecryptTotalRaised",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "campaignCount",
     data: BytesLike
@@ -220,6 +239,18 @@ export namespace ContributionMadeEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace DecryptionFulfilledEvent {
+  export type InputTuple = [requestID: BigNumberish];
+  export type OutputTuple = [requestID: bigint];
+  export interface OutputObject {
+    requestID: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace TokensClaimedEvent {
   export type InputTuple = [campaignId: BigNumberish, contributor: AddressLike];
   export type OutputTuple = [campaignId: bigint, contributor: string];
@@ -275,6 +306,26 @@ export interface ConfidentialFundraising extends BaseContract {
   removeAllListeners<TCEvent extends TypedContractEvent>(
     event?: TCEvent
   ): Promise<this>;
+
+  callbackDecryptMyContribution: TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+
+  callbackDecryptTotalRaised: TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
 
   campaignCount: TypedContractMethod<[], [bigint], "view">;
 
@@ -386,6 +437,28 @@ export interface ConfidentialFundraising extends BaseContract {
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "callbackDecryptMyContribution"
+  ): TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "callbackDecryptTotalRaised"
+  ): TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "campaignCount"
   ): TypedContractMethod<[], [bigint], "view">;
@@ -508,6 +581,13 @@ export interface ConfidentialFundraising extends BaseContract {
     ContributionMadeEvent.OutputObject
   >;
   getEvent(
+    key: "DecryptionFulfilled"
+  ): TypedContractEvent<
+    DecryptionFulfilledEvent.InputTuple,
+    DecryptionFulfilledEvent.OutputTuple,
+    DecryptionFulfilledEvent.OutputObject
+  >;
+  getEvent(
     key: "TokensClaimed"
   ): TypedContractEvent<
     TokensClaimedEvent.InputTuple,
@@ -558,6 +638,17 @@ export interface ConfidentialFundraising extends BaseContract {
       ContributionMadeEvent.InputTuple,
       ContributionMadeEvent.OutputTuple,
       ContributionMadeEvent.OutputObject
+    >;
+
+    "DecryptionFulfilled(uint256)": TypedContractEvent<
+      DecryptionFulfilledEvent.InputTuple,
+      DecryptionFulfilledEvent.OutputTuple,
+      DecryptionFulfilledEvent.OutputObject
+    >;
+    DecryptionFulfilled: TypedContractEvent<
+      DecryptionFulfilledEvent.InputTuple,
+      DecryptionFulfilledEvent.OutputTuple,
+      DecryptionFulfilledEvent.OutputObject
     >;
 
     "TokensClaimed(uint256,address)": TypedContractEvent<

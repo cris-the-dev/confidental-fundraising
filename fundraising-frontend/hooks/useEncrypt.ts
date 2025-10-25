@@ -29,40 +29,39 @@ export const useEncrypt = () => {
       setError(null);
 
       try {
-        // ✅ Validate against uint64 range
         const MAX_UINT64 = BigInt("18446744073709551615");
         if (value < 0n || value > MAX_UINT64) {
-          throw new Error(`Value out of range for uint64`);
+          throw new Error(`Value out of range for uint64: ${value}`);
         }
 
-        // Create encrypted input
         const input = instance.createEncryptedInput(
           CONTRACT_ADDRESS,
           userAddress
         );
 
-        console.log(`CA: ${CONTRACT_ADDRESS}`);
-        console.log(`userAddress: ${userAddress}`);
-        console.log(`value: ${value}`);
-        
-        
-        // Add value (safe after validation)
-        input.add64(Number(value));
-        
-        // Perform encryption
+        console.log(`Contract: ${CONTRACT_ADDRESS}`);
+        console.log(`User: ${userAddress}`);
+        console.log(`Encrypting value (Wei): ${value.toString()}`);
+
+        input.add64(value);
+
         const encryptedInput = await input.encrypt();
 
+        console.log(`encryptedInput: ${encryptedInput}`);
+
         if (!encryptedInput.handles?.[0] || !encryptedInput.inputProof) {
-          throw new Error('Invalid encryption result');
+          throw new Error("Invalid encryption result");
         }
 
-        // ✅ Return raw Uint8Array - NO hex conversion
+        console.log("✅ Encryption successful");
+
         return {
           encryptedData: encryptedInput.handles[0],
           proof: encryptedInput.inputProof,
         };
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : "Encryption failed";
+        const errorMsg =
+          err instanceof Error ? err.message : "Encryption failed";
         setError(errorMsg);
         throw new Error(errorMsg);
       } finally {

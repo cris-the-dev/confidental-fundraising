@@ -1,6 +1,46 @@
 export const FUNDRAISING_ABI = [
   {
     inputs: [],
+    name: "AlreadyCancelled",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "AlreadyClaimed",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "AlreadyFinalized",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "CacheExpired",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "CampaignEnded",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "CampaignNotExist",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "CampaignNotFinalized",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "CampaignStillActive",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "ContributionNotFound",
     type: "error",
   },
@@ -11,7 +51,42 @@ export const FUNDRAISING_ABI = [
   },
   {
     inputs: [],
+    name: "DecryptAlreadyInProgress",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "HandlesAlreadySavedForRequestID",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidKMSSignatures",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "MyContributionNotDecrypted",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "NoHandleFoundForRequestID",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "OnlyOwner",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "TotalRaisedNotDecrypted",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "UnauthorizedAccess",
     type: "error",
   },
   {
@@ -50,9 +125,9 @@ export const FUNDRAISING_ABI = [
       },
       {
         indexed: false,
-        internalType: "uint64",
+        internalType: "uint256",
         name: "targetAmount",
-        type: "uint64",
+        type: "uint256",
       },
       {
         indexed: false,
@@ -84,55 +159,6 @@ export const FUNDRAISING_ABI = [
     type: "event",
   },
   {
-    inputs: [
-      {
-        internalType: "uint16",
-        name: "campaignId",
-        type: "uint16",
-      },
-    ],
-    name: "cancelCampaign",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint16",
-        name: "campaignId",
-        type: "uint16",
-      },
-    ],
-    name: "claimTokens",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint16",
-        name: "campaignId",
-        type: "uint16",
-      },
-      {
-        internalType: "externalEuint8",
-        name: "encryptedAmount",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes",
-        name: "inputProof",
-        type: "bytes",
-      },
-    ],
-    name: "contribute",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     anonymous: false,
     inputs: [
       {
@@ -152,64 +178,17 @@ export const FUNDRAISING_ABI = [
     type: "event",
   },
   {
+    anonymous: false,
     inputs: [
       {
-        internalType: "string",
-        name: "title",
-        type: "string",
-      },
-      {
-        internalType: "string",
-        name: "description",
-        type: "string",
-      },
-      {
-        internalType: "uint8",
-        name: "target",
-        type: "uint8",
-      },
-      {
+        indexed: true,
         internalType: "uint256",
-        name: "duration",
+        name: "requestID",
         type: "uint256",
       },
     ],
-    name: "createCampaign",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint16",
-        name: "campaignId",
-        type: "uint16",
-      },
-    ],
-    name: "finalizeCampaign",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint16",
-        name: "campaignId",
-        type: "uint16",
-      },
-    ],
-    name: "requestMyContributionDecryption",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
+    name: "DecryptionFulfilled",
+    type: "event",
   },
   {
     anonymous: false,
@@ -229,6 +208,52 @@ export const FUNDRAISING_ABI = [
     ],
     name: "TokensClaimed",
     type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "requestId",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes",
+        name: "cleartexts",
+        type: "bytes",
+      },
+      {
+        internalType: "bytes",
+        name: "decryptionProof",
+        type: "bytes",
+      },
+    ],
+    name: "callbackDecryptMyContribution",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "requestId",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes",
+        name: "cleartexts",
+        type: "bytes",
+      },
+      {
+        internalType: "bytes",
+        name: "decryptionProof",
+        type: "bytes",
+      },
+    ],
+    name: "callbackDecryptTotalRaised",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     inputs: [],
@@ -269,14 +294,14 @@ export const FUNDRAISING_ABI = [
         type: "string",
       },
       {
-        internalType: "euint8",
+        internalType: "euint64",
         name: "totalRaised",
         type: "bytes32",
       },
       {
-        internalType: "uint8",
+        internalType: "uint64",
         name: "targetAmount",
-        type: "uint8",
+        type: "uint64",
       },
       {
         internalType: "uint256",
@@ -295,6 +320,102 @@ export const FUNDRAISING_ABI = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "cancelCampaign",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "claimTokens",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+      {
+        internalType: "externalEuint64",
+        name: "encryptedAmount",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes",
+        name: "inputProof",
+        type: "bytes",
+      },
+    ],
+    name: "contribute",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "title",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+      {
+        internalType: "uint64",
+        name: "target",
+        type: "uint64",
+      },
+      {
+        internalType: "uint256",
+        name: "duration",
+        type: "uint256",
+      },
+    ],
+    name: "createCampaign",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "finalizeCampaign",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -323,9 +444,9 @@ export const FUNDRAISING_ABI = [
         type: "string",
       },
       {
-        internalType: "uint8",
+        internalType: "uint64",
         name: "targetAmount",
-        type: "uint8",
+        type: "uint64",
       },
       {
         internalType: "uint256",
@@ -353,13 +474,95 @@ export const FUNDRAISING_ABI = [
         name: "campaignId",
         type: "uint16",
       },
+      {
+        internalType: "address",
+        name: "user",
+        type: "address",
+      },
+    ],
+    name: "getContributionStatus",
+    outputs: [
+      {
+        internalType: "enum FundraisingStruct.DecryptStatus",
+        name: "status",
+        type: "uint8",
+      },
+      {
+        internalType: "uint64",
+        name: "contribution",
+        type: "uint64",
+      },
+      {
+        internalType: "uint256",
+        name: "cacheExpiry",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
     ],
     name: "getMyContribution",
     outputs: [
       {
-        internalType: "uint8",
+        internalType: "uint64",
         name: "",
+        type: "uint64",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "getTotalRaised",
+    outputs: [
+      {
+        internalType: "uint64",
+        name: "",
+        type: "uint64",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "getTotalRaisedStatus",
+    outputs: [
+      {
+        internalType: "enum FundraisingStruct.DecryptStatus",
+        name: "status",
         type: "uint8",
+      },
+      {
+        internalType: "uint64",
+        name: "totalRaised",
+        type: "uint64",
+      },
+      {
+        internalType: "uint256",
+        name: "cacheExpiry",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -390,6 +593,30 @@ export const FUNDRAISING_ABI = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+      {
+        internalType: "address",
+        name: "user",
+        type: "address",
+      },
+    ],
+    name: "hasContribution",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "protocolId",
     outputs: [
@@ -400,6 +627,32 @@ export const FUNDRAISING_ABI = [
       },
     ],
     stateMutability: "pure",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "requestMyContributionDecryption",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "campaignId",
+        type: "uint16",
+      },
+    ],
+    name: "requestTotalRaisedDecryption",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
 ] as const;

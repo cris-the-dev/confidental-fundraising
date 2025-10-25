@@ -5,7 +5,7 @@ import {
   custom,
   publicActions,
   parseEther,
-  toHex,  // ✅ Keep this import
+  toHex,
 } from "viem";
 import { sepolia } from "viem/chains";
 import { useEncrypt } from "./useEncrypt";
@@ -41,14 +41,23 @@ export function useCampaigns() {
     setLoading(true);
     try {
       const client = await getClient();
+
       const targetWei = parseEther(targetAmount);
+
+      const MAX_UINT64 = BigInt("18446744073709551615");
+      if (targetWei > MAX_UINT64) {
+        throw new Error("Target amount too large for uint64");
+      }
+
       const durationSeconds = BigInt(durationDays * 24 * 60 * 60);
+
+      console.log("Creating campaign with target (Wei):", targetWei.toString());
 
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "createCampaign",
-        args: [title, description, BigInt(targetWei), durationSeconds],
+        args: [title, description, targetWei, durationSeconds],
       });
 
       await client.waitForTransactionReceipt({ hash });
@@ -63,16 +72,26 @@ export function useCampaigns() {
 
   const contribute = async (campaignId: number, amount: string) => {
     try {
+      setLoading(true);
       const client = await getClient();
+
       const amountWei = parseEther(amount);
 
-      console.log("💰 Contributing:", amount, "ETH");
+      const MAX_UINT64 = BigInt("18446744073709551615");
+      if (amountWei > MAX_UINT64) {
+        throw new Error("Amount too large for uint64");
+      }
 
-      // Encrypt the amount
+      console.log(
+        "💰 Contributing:",
+        amount,
+        "ETH (",
+        amountWei.toString(),
+        "Wei)"
+      );
+
       const { encryptedData, proof } = await encrypt64(amountWei);
 
-      // ✅ FIXED: Convert Uint8Array to hex string for viem
-      // The contract expects bytes, but viem's TypeScript types require hex strings
       const encryptedDataHex = toHex(encryptedData);
       const proofHex = toHex(proof);
 
@@ -82,11 +101,7 @@ export function useCampaigns() {
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "contribute",
-        args: [
-          BigInt(campaignId),
-          encryptedDataHex,  // ✅ Now it's `0x${string}` type
-          proofHex,          // ✅ Now it's `0x${string}` type
-        ],
+        args: [campaignId, encryptedDataHex, proofHex],
       });
 
       console.log("⏳ Transaction submitted:", hash);
@@ -100,7 +115,92 @@ export function useCampaigns() {
 
       return hash;
     } catch (error) {
+      setLoading(false);
       console.error("❌ Contribution failed:", error);
+      throw error;
+    }
+  };
+
+  const requestMyContributionDecryption = async (campaignId: number) => {
+    setLoading(true);
+    try {
+      const client = await getClient();
+
+      const hash = await client.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "requestMyContributionDecryption",
+        args: [campaignId],
+      });
+
+      await client.waitForTransactionReceipt({ hash });
+      console.log("✅ Decryption requested, waiting for callback...");
+      return hash;
+    } catch (error) {
+      console.error("Error requesting decryption:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const requestTotalRaisedDecryption = async (campaignId: number) => {
+    setLoading(true);
+    try {
+      const client = await getClient();
+
+      const hash = await client.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "requestTotalRaisedDecryption",
+        args: [campaignId],
+      });
+
+      await client.waitForTransactionReceipt({ hash });
+      console.log(
+        "✅ Total raised decryption requested, waiting for callback..."
+      );
+      return hash;
+    } catch (error) {
+      console.error("Error requesting total decryption:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMyContribution = async (campaignId: number): Promise<bigint> => {
+    try {
+      const client = await getClient();
+
+      const contribution = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "getMyContribution",
+        args: [campaignId],
+      });
+
+      return BigInt(contribution);
+    } catch (error) {
+      console.error("Error fetching my contribution:", error);
+      throw error;
+    }
+  };
+
+  const getTotalRaised = async (campaignId: number): Promise<bigint> => {
+    try {
+      const client = await getClient();
+
+      const total = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "getTotalRaised",
+        args: [campaignId],
+      });
+
+      return BigInt(total);
+    } catch (error) {
+      console.error("Error fetching total raised:", error);
       throw error;
     }
   };
@@ -114,7 +214,7 @@ export function useCampaigns() {
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "finalizeCampaign",
-        args: [BigInt(campaignId)],
+        args: [campaignId],
       });
 
       await client.waitForTransactionReceipt({ hash });
@@ -136,7 +236,7 @@ export function useCampaigns() {
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "cancelCampaign",
-        args: [BigInt(campaignId)],
+        args: [campaignId],
       });
 
       await client.waitForTransactionReceipt({ hash });
@@ -158,7 +258,7 @@ export function useCampaigns() {
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "claimTokens",
-        args: [BigInt(campaignId)],
+        args: [campaignId],
       });
 
       await client.waitForTransactionReceipt({ hash });
@@ -179,7 +279,7 @@ export function useCampaigns() {
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "getCampaign",
-        args: [BigInt(campaignId)],
+        args: [campaignId],
       });
 
       return {
@@ -215,38 +315,80 @@ export function useCampaigns() {
     }
   };
 
-  const getEncryptedTotal = async (campaignId: number): Promise<bigint> => {
+  const getContributionStatus = async (
+    campaignId: number,
+    userAddress: string
+  ): Promise<{
+    status: number;
+    contribution: bigint;
+    cacheExpiry: bigint;
+  }> => {
     try {
       const client = await getClient();
 
-      const total = await client.readContract({
+      const result = await client.readContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
-        functionName: "getEncryptedTotal",
-        args: [BigInt(campaignId)],
+        functionName: "getContributionStatus",
+        args: [campaignId, userAddress as `0x${string}`],
       });
 
-      return total as bigint;
+      return {
+        status: Number(result[0]),
+        contribution: BigInt(result[1]),
+        cacheExpiry: BigInt(result[2]),
+      };
     } catch (error) {
-      console.error("Error fetching encrypted total:", error);
+      console.error("Error fetching contribution status:", error);
       throw error;
     }
   };
 
-  const getMyContribution = async (campaignId: number): Promise<bigint> => {
+  const checkHasContribution = async (
+    campaignId: number,
+    userAddress: string
+  ): Promise<boolean> => {
     try {
       const client = await getClient();
 
-      const contribution = await client.readContract({
+      const result = await client.readContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
-        functionName: "getMyContribution",
-        args: [BigInt(campaignId)],
+        functionName: "hasContribution",
+        args: [campaignId, userAddress as `0x${string}`],
       });
 
-      return contribution as bigint;
+      return result as boolean;
     } catch (error) {
-      console.error("Error fetching my contribution:", error);
+      console.error("Error checking contribution:", error);
+      return false;
+    }
+  };
+
+  const getTotalRaisedStatus = async (
+    campaignId: number
+  ): Promise<{
+    status: number;
+    totalRaised: bigint;
+    cacheExpiry: bigint;
+  }> => {
+    try {
+      const client = await getClient();
+
+      const result = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "getTotalRaisedStatus",
+        args: [campaignId],
+      });
+
+      return {
+        status: Number(result[0]),
+        totalRaised: BigInt(result[1]),
+        cacheExpiry: BigInt(result[2]),
+      };
+    } catch (error) {
+      console.error("Error fetching total raised status:", error);
       throw error;
     }
   };
@@ -260,7 +402,12 @@ export function useCampaigns() {
     claimTokens,
     getCampaign,
     getCampaignCount,
-    getEncryptedTotal,
+    requestMyContributionDecryption,
+    requestTotalRaisedDecryption,
     getMyContribution,
+    getTotalRaised,
+    getContributionStatus,
+    checkHasContribution,
+    getTotalRaisedStatus,
   };
 }

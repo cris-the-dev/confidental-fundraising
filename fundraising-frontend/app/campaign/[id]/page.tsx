@@ -15,7 +15,7 @@ export default function CampaignDetail() {
   const router = useRouter();
   const { user, authenticated } = usePrivy();
   const { finalizeCampaign, cancelCampaign, claimTokens, getCampaign, loading } = useCampaigns();
-  
+
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loadingCampaign, setLoadingCampaign] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export default function CampaignDetail() {
 
   useEffect(() => {
     loadCampaign();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
 
   const loadCampaign = async () => {
@@ -49,7 +49,7 @@ export default function CampaignDetail() {
       await finalizeCampaign(campaignId);
       setActionSuccess('Campaign finalized successfully!');
       await loadCampaign();
-    
+
     } catch (err: any) {
       setError(err.message || 'Failed to finalize campaign');
     }
@@ -66,7 +66,7 @@ export default function CampaignDetail() {
       await cancelCampaign(campaignId);
       setActionSuccess('Campaign cancelled successfully!');
       await loadCampaign();
-    
+
     } catch (err: any) {
       setError(err.message || 'Failed to cancel campaign');
     }
@@ -78,7 +78,7 @@ export default function CampaignDetail() {
       setActionSuccess(null);
       await claimTokens(campaignId);
       setActionSuccess('Tokens claimed successfully!');
-    
+
     } catch (err: any) {
       setError(err.message || 'Failed to claim tokens');
     }
@@ -205,8 +205,8 @@ export default function CampaignDetail() {
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="bg-purple-50 rounded-lg p-4">
                 <p className="text-sm text-purple-800">
-                  🔒 <strong>Privacy Protected:</strong> Individual contribution 
-                  amounts are encrypted using FHEVM. Only contributors can see 
+                  🔒 <strong>Privacy Protected:</strong> Individual contribution
+                  amounts are encrypted using FHEVM. Only contributors can see
                   their own contribution amounts.
                 </p>
               </div>
@@ -220,7 +220,7 @@ export default function CampaignDetail() {
                 🔐 Encrypted Data
               </h2>
               <div className="space-y-4">
-                {isOwner && <ViewCampaignTotal campaignId={campaignId} />}
+                <ViewCampaignTotal campaignId={campaignId} isOwner={isOwner} />
                 <ViewMyContribution campaignId={campaignId} />
               </div>
             </div>

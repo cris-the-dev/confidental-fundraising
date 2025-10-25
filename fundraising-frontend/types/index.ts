@@ -20,3 +20,9 @@ export interface ContributionData {
   encryptedAmount: string;
   hasContributed: boolean;
 }
+
+export enum DecryptStatus {
+  NONE = 0,
+  PROCESSING = 1,
+  DECRYPTED = 2,
+}
