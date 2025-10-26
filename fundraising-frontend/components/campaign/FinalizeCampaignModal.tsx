@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCampaigns } from '../../hooks/useCampaigns';
+import { DecryptStatus } from '../../types';
 
 interface Props {
   campaignId: number;
@@ -18,10 +19,60 @@ export function FinalizeCampaignModal({
   onClose,
   onSuccess,
 }: Props) {
-  const { finalizeCampaign, loading } = useCampaigns();
+  const {
+    finalizeCampaign,
+    getTotalRaisedStatus,
+    requestTotalRaisedDecryption,
+    loading
+  } = useCampaigns();
   const [tokenName, setTokenName] = useState('');
   const [tokenSymbol, setTokenSymbol] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [finalizingStep, setFinalizingStep] = useState<string>('');
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
+  const waitForTotalRaisedDecryption = async (): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 24; // 24 * 5 seconds = 2 minutes max
+
+      const interval = setInterval(async () => {
+        attempts++;
+
+        try {
+          const status = await getTotalRaisedStatus(campaignId);
+
+          if (status.status === DecryptStatus.DECRYPTED && status.totalRaised >= 0n) {
+            clearInterval(interval);
+            setPollingInterval(null);
+            resolve(true);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setPollingInterval(null);
+            reject(new Error('Decryption timeout - please try again'));
+          }
+        } catch (err) {
+          console.error('Error checking total raised decryption status:', err);
+          if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setPollingInterval(null);
+            reject(err);
+          }
+        }
+      }, 5000); // Poll every 5 seconds
+
+      setPollingInterval(interval);
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,27 +100,67 @@ export function FinalizeCampaignModal({
 
     try {
       setError(null);
+
+      // Step 1: Check if total raised is decrypted
+      setFinalizingStep('Checking total raised status...');
+      const totalRaisedStatus = await getTotalRaisedStatus(campaignId);
+
+      // Step 2: If not decrypted, request decryption
+      if (totalRaisedStatus.status === DecryptStatus.NONE || (totalRaisedStatus.status === DecryptStatus.DECRYPTED && totalRaisedStatus.totalRaised < 0n)) {
+        setFinalizingStep('Total raised needs to be decrypted first...');
+        await requestTotalRaisedDecryption(campaignId);
+
+        // Wait and poll for decryption to complete
+        setFinalizingStep('Waiting for decryption (10-30 seconds)...');
+        await waitForTotalRaisedDecryption();
+      } else if (totalRaisedStatus.status === DecryptStatus.PROCESSING) {
+        setFinalizingStep('Decryption already in progress, waiting...');
+        await waitForTotalRaisedDecryption();
+      }
+
+      // Step 3: Finalize campaign
+      setFinalizingStep('Finalizing campaign...');
       await finalizeCampaign(campaignId, tokenName.trim(), tokenSymbol.trim().toUpperCase());
+
+      setFinalizingStep('');
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error('Finalize error:', err);
-      
+
+      let errorMessage = err.message || 'Failed to finalize campaign';
+
       if (err.message?.includes('Must decrypt total raised first')) {
-        setError('You must decrypt the total raised amount first before finalizing');
+        errorMessage = 'Unable to decrypt total raised. Please try again.';
       } else if (err.message?.includes('CampaignStillActive')) {
-        setError('Campaign deadline has not passed yet');
-      } else {
-        setError(err.message || 'Failed to finalize campaign');
+        errorMessage = 'Campaign deadline has not passed yet';
+      } else if (err.message?.includes('Decryption timeout')) {
+        errorMessage = 'Decryption took too long. Please try again.';
+      } else if (err.message?.includes('OnlyOwner')) {
+        errorMessage = 'Only the campaign owner can finalize';
+      }
+
+      setError(errorMessage);
+      setFinalizingStep('');
+
+      // Cleanup polling
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
       }
     }
   };
 
   const handleClose = () => {
-    if (!loading) {
+    if (!loading && !finalizingStep) {
       setTokenName('');
       setTokenSymbol('');
       setError(null);
+      setFinalizingStep('');
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
       onClose();
     }
   };
@@ -121,6 +212,38 @@ export function FinalizeCampaignModal({
             </p>
           </div>
 
+          {/* Progress Indicator */}
+          {finalizingStep && (
+            <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <svg
+                  className="animate-spin h-5 w-5 text-blue-600 flex-shrink-0"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">{finalizingStep}</p>
+                  <p className="text-xs text-blue-700">Please wait, do not close this window</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Warning */}
           <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex gap-3">
@@ -128,7 +251,7 @@ export function FinalizeCampaignModal({
               <div className="text-sm text-yellow-800">
                 <p className="font-medium mb-1">Important:</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Make sure you have decrypted the total raised amount first</li>
+                  <li>Total raised will be automatically decrypted if needed</li>
                   <li>If target is reached, contributors will receive tokens</li>
                   <li>If target is not reached, funds will be unlocked (campaign fails)</li>
                   <li>This action cannot be undone</li>
@@ -198,17 +321,17 @@ export function FinalizeCampaignModal({
               <button
                 type="button"
                 onClick={handleClose}
-                disabled={loading}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50"
+                disabled={loading || !!finalizingStep}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={loading || !tokenName.trim() || !tokenSymbol.trim()}
+                disabled={loading || !!finalizingStep || !tokenName.trim() || !tokenSymbol.trim()}
                 className="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
+                {loading || finalizingStep ? (
                   <span className="flex items-center justify-center">
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -230,13 +353,18 @@ export function FinalizeCampaignModal({
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Finalizing...
+                    Processing...
                   </span>
                 ) : (
                   'Finalize Campaign'
                 )}
               </button>
             </div>
+            {!finalizingStep && (
+              <p className="text-xs text-gray-500 text-center">
+                💡 Total raised will be automatically decrypted if needed
+              </p>
+            )}
           </form>
 
           {/* Examples */}
