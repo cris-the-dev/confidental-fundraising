@@ -5,3 +5,5 @@ export * as impl from "./impl";
 export { IDecryptionCallbacks__factory } from "./IDecryptionCallbacks__factory";
 export { IFundraisingErrors__factory } from "./IFundraisingErrors__factory";
 export { IFundraisingEvents__factory } from "./IFundraisingEvents__factory";
+export { IShareVaultErrors__factory } from "./IShareVaultErrors__factory";
+export { IShareVaultEvents__factory } from "./IShareVaultEvents__factory";

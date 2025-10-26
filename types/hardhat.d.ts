@@ -46,9 +46,41 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IInputVerifier__factory>;
     getContractFactory(
+      name: "Ownable",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Ownable__factory>;
+    getContractFactory(
+      name: "IERC1155Errors",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC1155Errors__factory>;
+    getContractFactory(
+      name: "IERC20Errors",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC20Errors__factory>;
+    getContractFactory(
+      name: "IERC721Errors",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC721Errors__factory>;
+    getContractFactory(
+      name: "ERC20",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ERC20__factory>;
+    getContractFactory(
+      name: "IERC20Metadata",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC20Metadata__factory>;
+    getContractFactory(
+      name: "IERC20",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC20__factory>;
+    getContractFactory(
       name: "ConfidentialFundraising",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ConfidentialFundraising__factory>;
+    getContractFactory(
+      name: "CampaignToken",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.CampaignToken__factory>;
     getContractFactory(
       name: "IDecryptionCallbacks",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -66,25 +98,25 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.DecryptionCallbacks__factory>;
     getContractFactory(
+      name: "IShareVaultErrors",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IShareVaultErrors__factory>;
+    getContractFactory(
+      name: "IShareVaultEvents",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IShareVaultEvents__factory>;
+    getContractFactory(
+      name: "ShareVault",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ShareVault__factory>;
+    getContractFactory(
       name: "FundraisingStorage",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.FundraisingStorage__factory>;
     getContractFactory(
-      name: "EthereumZamaFHEVMConfig",
+      name: "ShareVaultStorage",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.EthereumZamaFHEVMConfig__factory>;
-    getContractFactory(
-      name: "SepoliaZamaFHEVMConfig",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.SepoliaZamaFHEVMConfig__factory>;
-    getContractFactory(
-      name: "IACL",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IACL__factory>;
-    getContractFactory(
-      name: "ITFHEExecutor",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ITFHEExecutor__factory>;
+    ): Promise<Contracts.ShareVaultStorage__factory>;
 
     getContractAt(
       name: "EthereumConfig",
@@ -127,10 +159,50 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IInputVerifier>;
     getContractAt(
+      name: "Ownable",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Ownable>;
+    getContractAt(
+      name: "IERC1155Errors",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC1155Errors>;
+    getContractAt(
+      name: "IERC20Errors",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC20Errors>;
+    getContractAt(
+      name: "IERC721Errors",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC721Errors>;
+    getContractAt(
+      name: "ERC20",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ERC20>;
+    getContractAt(
+      name: "IERC20Metadata",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC20Metadata>;
+    getContractAt(
+      name: "IERC20",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC20>;
+    getContractAt(
       name: "ConfidentialFundraising",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.ConfidentialFundraising>;
+    getContractAt(
+      name: "CampaignToken",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.CampaignToken>;
     getContractAt(
       name: "IDecryptionCallbacks",
       address: string | ethers.Addressable,
@@ -152,30 +224,30 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.DecryptionCallbacks>;
     getContractAt(
+      name: "IShareVaultErrors",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IShareVaultErrors>;
+    getContractAt(
+      name: "IShareVaultEvents",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IShareVaultEvents>;
+    getContractAt(
+      name: "ShareVault",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ShareVault>;
+    getContractAt(
       name: "FundraisingStorage",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.FundraisingStorage>;
     getContractAt(
-      name: "EthereumZamaFHEVMConfig",
+      name: "ShareVaultStorage",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.EthereumZamaFHEVMConfig>;
-    getContractAt(
-      name: "SepoliaZamaFHEVMConfig",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.SepoliaZamaFHEVMConfig>;
-    getContractAt(
-      name: "IACL",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IACL>;
-    getContractAt(
-      name: "ITFHEExecutor",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ITFHEExecutor>;
+    ): Promise<Contracts.ShareVaultStorage>;
 
     deployContract(
       name: "EthereumConfig",
@@ -210,9 +282,41 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IInputVerifier>;
     deployContract(
+      name: "Ownable",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Ownable>;
+    deployContract(
+      name: "IERC1155Errors",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC1155Errors>;
+    deployContract(
+      name: "IERC20Errors",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC20Errors>;
+    deployContract(
+      name: "IERC721Errors",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC721Errors>;
+    deployContract(
+      name: "ERC20",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ERC20>;
+    deployContract(
+      name: "IERC20Metadata",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC20Metadata>;
+    deployContract(
+      name: "IERC20",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC20>;
+    deployContract(
       name: "ConfidentialFundraising",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ConfidentialFundraising>;
+    deployContract(
+      name: "CampaignToken",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.CampaignToken>;
     deployContract(
       name: "IDecryptionCallbacks",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -230,25 +334,25 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.DecryptionCallbacks>;
     deployContract(
+      name: "IShareVaultErrors",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IShareVaultErrors>;
+    deployContract(
+      name: "IShareVaultEvents",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IShareVaultEvents>;
+    deployContract(
+      name: "ShareVault",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ShareVault>;
+    deployContract(
       name: "FundraisingStorage",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.FundraisingStorage>;
     deployContract(
-      name: "EthereumZamaFHEVMConfig",
+      name: "ShareVaultStorage",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.EthereumZamaFHEVMConfig>;
-    deployContract(
-      name: "SepoliaZamaFHEVMConfig",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.SepoliaZamaFHEVMConfig>;
-    deployContract(
-      name: "IACL",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IACL>;
-    deployContract(
-      name: "ITFHEExecutor",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ITFHEExecutor>;
+    ): Promise<Contracts.ShareVaultStorage>;
 
     deployContract(
       name: "EthereumConfig",
@@ -291,10 +395,50 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IInputVerifier>;
     deployContract(
+      name: "Ownable",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Ownable>;
+    deployContract(
+      name: "IERC1155Errors",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC1155Errors>;
+    deployContract(
+      name: "IERC20Errors",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC20Errors>;
+    deployContract(
+      name: "IERC721Errors",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC721Errors>;
+    deployContract(
+      name: "ERC20",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ERC20>;
+    deployContract(
+      name: "IERC20Metadata",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC20Metadata>;
+    deployContract(
+      name: "IERC20",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC20>;
+    deployContract(
       name: "ConfidentialFundraising",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ConfidentialFundraising>;
+    deployContract(
+      name: "CampaignToken",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.CampaignToken>;
     deployContract(
       name: "IDecryptionCallbacks",
       args: any[],
@@ -316,30 +460,30 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.DecryptionCallbacks>;
     deployContract(
+      name: "IShareVaultErrors",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IShareVaultErrors>;
+    deployContract(
+      name: "IShareVaultEvents",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IShareVaultEvents>;
+    deployContract(
+      name: "ShareVault",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ShareVault>;
+    deployContract(
       name: "FundraisingStorage",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.FundraisingStorage>;
     deployContract(
-      name: "EthereumZamaFHEVMConfig",
+      name: "ShareVaultStorage",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.EthereumZamaFHEVMConfig>;
-    deployContract(
-      name: "SepoliaZamaFHEVMConfig",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.SepoliaZamaFHEVMConfig>;
-    deployContract(
-      name: "IACL",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IACL>;
-    deployContract(
-      name: "ITFHEExecutor",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ITFHEExecutor>;
+    ): Promise<Contracts.ShareVaultStorage>;
 
     // default types
     getContractFactory(

@@ -26,15 +26,27 @@ import type {
 export interface DecryptionCallbacksInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "CACHE_TIMEOUT"
+      | "callbackDecryptAvailableBalance"
       | "callbackDecryptMyContribution"
       | "callbackDecryptTotalRaised"
+      | "campaignContract"
       | "campaignCount"
       | "campaigns"
       | "hasClaimed"
+      | "hasClaimedTokens"
   ): FunctionFragment;
 
   getEvent(nameOrSignatureOrTopic: "DecryptionFulfilled"): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "CACHE_TIMEOUT",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "callbackDecryptAvailableBalance",
+    values: [BigNumberish, BytesLike, BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "callbackDecryptMyContribution",
     values: [BigNumberish, BytesLike, BytesLike]
@@ -42,6 +54,10 @@ export interface DecryptionCallbacksInterface extends Interface {
   encodeFunctionData(
     functionFragment: "callbackDecryptTotalRaised",
     values: [BigNumberish, BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "campaignContract",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "campaignCount",
@@ -55,7 +71,19 @@ export interface DecryptionCallbacksInterface extends Interface {
     functionFragment: "hasClaimed",
     values: [BigNumberish, AddressLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "hasClaimedTokens",
+    values: [BigNumberish, AddressLike]
+  ): string;
 
+  decodeFunctionResult(
+    functionFragment: "CACHE_TIMEOUT",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "callbackDecryptAvailableBalance",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "callbackDecryptMyContribution",
     data: BytesLike
@@ -65,11 +93,19 @@ export interface DecryptionCallbacksInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "campaignContract",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "campaignCount",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "campaigns", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "hasClaimed", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "hasClaimedTokens",
+    data: BytesLike
+  ): Result;
 }
 
 export namespace DecryptionFulfilledEvent {
@@ -127,6 +163,18 @@ export interface DecryptionCallbacks extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  CACHE_TIMEOUT: TypedContractMethod<[], [bigint], "view">;
+
+  callbackDecryptAvailableBalance: TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+
   callbackDecryptMyContribution: TypedContractMethod<
     [
       requestId: BigNumberish,
@@ -147,12 +195,24 @@ export interface DecryptionCallbacks extends BaseContract {
     "nonpayable"
   >;
 
+  campaignContract: TypedContractMethod<[], [string], "view">;
+
   campaignCount: TypedContractMethod<[], [bigint], "view">;
 
   campaigns: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, string, string, string, bigint, bigint, boolean, boolean] & {
+      [
+        string,
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        boolean,
+        boolean,
+        string
+      ] & {
         owner: string;
         title: string;
         description: string;
@@ -161,6 +221,7 @@ export interface DecryptionCallbacks extends BaseContract {
         deadline: bigint;
         finalized: boolean;
         cancelled: boolean;
+        tokenAddress: string;
       }
     ],
     "view"
@@ -172,10 +233,30 @@ export interface DecryptionCallbacks extends BaseContract {
     "view"
   >;
 
+  hasClaimedTokens: TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "CACHE_TIMEOUT"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "callbackDecryptAvailableBalance"
+  ): TypedContractMethod<
+    [
+      requestId: BigNumberish,
+      cleartexts: BytesLike,
+      decryptionProof: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "callbackDecryptMyContribution"
   ): TypedContractMethod<
@@ -199,6 +280,9 @@ export interface DecryptionCallbacks extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "campaignContract"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "campaignCount"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
@@ -206,7 +290,17 @@ export interface DecryptionCallbacks extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, string, string, string, bigint, bigint, boolean, boolean] & {
+      [
+        string,
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        boolean,
+        boolean,
+        string
+      ] & {
         owner: string;
         title: string;
         description: string;
@@ -215,12 +309,20 @@ export interface DecryptionCallbacks extends BaseContract {
         deadline: bigint;
         finalized: boolean;
         cancelled: boolean;
+        tokenAddress: string;
       }
     ],
     "view"
   >;
   getFunction(
     nameOrSignature: "hasClaimed"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "hasClaimedTokens"
   ): TypedContractMethod<
     [arg0: BigNumberish, arg1: AddressLike],
     [boolean],

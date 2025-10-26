@@ -119,7 +119,7 @@ export default function CreateCampaign() {
                 value={formData.targetAmount}
                 onChange={handleChange}
                 placeholder="10"
-                step="0.1"
+                step="0.001"
                 min="0"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 disabled={loading}

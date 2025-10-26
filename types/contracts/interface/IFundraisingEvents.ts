@@ -25,9 +25,11 @@ export interface IFundraisingEventsInterface extends Interface {
     nameOrSignatureOrTopic:
       | "CampaignCancelled"
       | "CampaignCreated"
+      | "CampaignFailed"
       | "CampaignFinalized"
       | "ContributionMade"
       | "TokensClaimed"
+      | "TokensDistributed"
   ): EventFragment;
 }
 
@@ -71,6 +73,18 @@ export namespace CampaignCreatedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace CampaignFailedEvent {
+  export type InputTuple = [campaignId: BigNumberish];
+  export type OutputTuple = [campaignId: bigint];
+  export interface OutputObject {
+    campaignId: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace CampaignFinalizedEvent {
   export type InputTuple = [campaignId: BigNumberish, targetReached: boolean];
   export type OutputTuple = [campaignId: bigint, targetReached: boolean];
@@ -103,6 +117,28 @@ export namespace TokensClaimedEvent {
   export interface OutputObject {
     campaignId: bigint;
     contributor: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TokensDistributedEvent {
+  export type InputTuple = [
+    campaignId: BigNumberish,
+    contributor: AddressLike,
+    amount: BigNumberish
+  ];
+  export type OutputTuple = [
+    campaignId: bigint,
+    contributor: string,
+    amount: bigint
+  ];
+  export interface OutputObject {
+    campaignId: bigint;
+    contributor: string;
+    amount: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -172,6 +208,13 @@ export interface IFundraisingEvents extends BaseContract {
     CampaignCreatedEvent.OutputObject
   >;
   getEvent(
+    key: "CampaignFailed"
+  ): TypedContractEvent<
+    CampaignFailedEvent.InputTuple,
+    CampaignFailedEvent.OutputTuple,
+    CampaignFailedEvent.OutputObject
+  >;
+  getEvent(
     key: "CampaignFinalized"
   ): TypedContractEvent<
     CampaignFinalizedEvent.InputTuple,
@@ -191,6 +234,13 @@ export interface IFundraisingEvents extends BaseContract {
     TokensClaimedEvent.InputTuple,
     TokensClaimedEvent.OutputTuple,
     TokensClaimedEvent.OutputObject
+  >;
+  getEvent(
+    key: "TokensDistributed"
+  ): TypedContractEvent<
+    TokensDistributedEvent.InputTuple,
+    TokensDistributedEvent.OutputTuple,
+    TokensDistributedEvent.OutputObject
   >;
 
   filters: {
@@ -214,6 +264,17 @@ export interface IFundraisingEvents extends BaseContract {
       CampaignCreatedEvent.InputTuple,
       CampaignCreatedEvent.OutputTuple,
       CampaignCreatedEvent.OutputObject
+    >;
+
+    "CampaignFailed(uint16)": TypedContractEvent<
+      CampaignFailedEvent.InputTuple,
+      CampaignFailedEvent.OutputTuple,
+      CampaignFailedEvent.OutputObject
+    >;
+    CampaignFailed: TypedContractEvent<
+      CampaignFailedEvent.InputTuple,
+      CampaignFailedEvent.OutputTuple,
+      CampaignFailedEvent.OutputObject
     >;
 
     "CampaignFinalized(uint256,bool)": TypedContractEvent<
@@ -247,6 +308,17 @@ export interface IFundraisingEvents extends BaseContract {
       TokensClaimedEvent.InputTuple,
       TokensClaimedEvent.OutputTuple,
       TokensClaimedEvent.OutputObject
+    >;
+
+    "TokensDistributed(uint16,address,uint256)": TypedContractEvent<
+      TokensDistributedEvent.InputTuple,
+      TokensDistributedEvent.OutputTuple,
+      TokensDistributedEvent.OutputObject
+    >;
+    TokensDistributed: TypedContractEvent<
+      TokensDistributedEvent.InputTuple,
+      TokensDistributedEvent.OutputTuple,
+      TokensDistributedEvent.OutputObject
     >;
   };
 }

@@ -23,7 +23,11 @@ import type {
 
 export interface FundraisingStorageInterface extends Interface {
   getFunction(
-    nameOrSignature: "campaignCount" | "campaigns" | "hasClaimed"
+    nameOrSignature:
+      | "campaignCount"
+      | "campaigns"
+      | "hasClaimed"
+      | "hasClaimedTokens"
   ): FunctionFragment;
 
   encodeFunctionData(
@@ -38,6 +42,10 @@ export interface FundraisingStorageInterface extends Interface {
     functionFragment: "hasClaimed",
     values: [BigNumberish, AddressLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "hasClaimedTokens",
+    values: [BigNumberish, AddressLike]
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "campaignCount",
@@ -45,6 +53,10 @@ export interface FundraisingStorageInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "campaigns", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "hasClaimed", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "hasClaimedTokens",
+    data: BytesLike
+  ): Result;
 }
 
 export interface FundraisingStorage extends BaseContract {
@@ -95,7 +107,17 @@ export interface FundraisingStorage extends BaseContract {
   campaigns: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, string, string, string, bigint, bigint, boolean, boolean] & {
+      [
+        string,
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        boolean,
+        boolean,
+        string
+      ] & {
         owner: string;
         title: string;
         description: string;
@@ -104,12 +126,19 @@ export interface FundraisingStorage extends BaseContract {
         deadline: bigint;
         finalized: boolean;
         cancelled: boolean;
+        tokenAddress: string;
       }
     ],
     "view"
   >;
 
   hasClaimed: TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+
+  hasClaimedTokens: TypedContractMethod<
     [arg0: BigNumberish, arg1: AddressLike],
     [boolean],
     "view"
@@ -127,7 +156,17 @@ export interface FundraisingStorage extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, string, string, string, bigint, bigint, boolean, boolean] & {
+      [
+        string,
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        boolean,
+        boolean,
+        string
+      ] & {
         owner: string;
         title: string;
         description: string;
@@ -136,12 +175,20 @@ export interface FundraisingStorage extends BaseContract {
         deadline: bigint;
         finalized: boolean;
         cancelled: boolean;
+        tokenAddress: string;
       }
     ],
     "view"
   >;
   getFunction(
     nameOrSignature: "hasClaimed"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "hasClaimedTokens"
   ): TypedContractMethod<
     [arg0: BigNumberish, arg1: AddressLike],
     [boolean],

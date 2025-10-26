@@ -9,9 +9,10 @@ import {
 } from "viem";
 import { sepolia } from "viem/chains";
 import { useEncrypt } from "./useEncrypt";
-import { CONTRACT_ADDRESS } from "../lib/contracts/config";
+import { CONTRACT_ADDRESS, VAULT_ADDRESS } from "../lib/contracts/config";
 import { FUNDRAISING_ABI } from "../lib/contracts/abi";
 import { Campaign } from "../types";
+import { VAULT_ABI } from "../lib/contracts/vaultAbi";
 
 export function useCampaigns() {
   const { wallets } = useWallets();
@@ -169,43 +170,12 @@ export function useCampaigns() {
     }
   };
 
-  const getMyContribution = async (campaignId: number): Promise<bigint> => {
-    try {
-      const client = await getClient();
 
-      const contribution = await client.readContract({
-        address: CONTRACT_ADDRESS,
-        abi: FUNDRAISING_ABI,
-        functionName: "getMyContribution",
-        args: [campaignId],
-      });
-
-      return BigInt(contribution);
-    } catch (error) {
-      console.error("Error fetching my contribution:", error);
-      throw error;
-    }
-  };
-
-  const getTotalRaised = async (campaignId: number): Promise<bigint> => {
-    try {
-      const client = await getClient();
-
-      const total = await client.readContract({
-        address: CONTRACT_ADDRESS,
-        abi: FUNDRAISING_ABI,
-        functionName: "getTotalRaised",
-        args: [campaignId],
-      });
-
-      return BigInt(total);
-    } catch (error) {
-      console.error("Error fetching total raised:", error);
-      throw error;
-    }
-  };
-
-  const finalizeCampaign = async (campaignId: number) => {
+  const finalizeCampaign = async (
+    campaignId: number,
+    tokenName: string,
+    tokenSymbol: string
+  ) => {
     setLoading(true);
     try {
       const client = await getClient();
@@ -214,11 +184,11 @@ export function useCampaigns() {
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
         functionName: "finalizeCampaign",
-        args: [campaignId],
+        args: [campaignId, tokenName, tokenSymbol],
       });
 
       await client.waitForTransactionReceipt({ hash });
-      return hash;
+      console.log("✅ Campaign finalized");
     } catch (error) {
       console.error("Error finalizing campaign:", error);
       throw error;
@@ -291,6 +261,7 @@ export function useCampaigns() {
         deadline: Number(result[4]),
         finalized: result[5],
         cancelled: result[6],
+        tokenAddress: result[7],
       };
     } catch (error) {
       console.error("Error fetching campaign:", error);
@@ -365,6 +336,27 @@ export function useCampaigns() {
     }
   };
 
+  const checkHasClaimed = async (
+    campaignId: number,
+    userAddress: string
+  ): Promise<boolean> => {
+    try {
+      const client = await getClient();
+
+      const result = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "hasClaimed",
+        args: [campaignId, userAddress as `0x${string}`],
+      });
+
+      return result as boolean;
+    } catch (error) {
+      console.error("Error checking if claimed:", error);
+      return false;
+    }
+  };
+
   const getTotalRaisedStatus = async (
     campaignId: number
   ): Promise<{
@@ -393,6 +385,122 @@ export function useCampaigns() {
     }
   };
 
+  // Vault deposit
+  const depositToVault = async (amount: string) => {
+    setLoading(true);
+    try {
+      const client = await getClient();
+      const amountWei = parseEther(amount);
+
+      // Validate uint64 range
+      const MAX_UINT64 = BigInt("18446744073709551615");
+      if (amountWei > MAX_UINT64) {
+        throw new Error("Amount too large for uint64");
+      }
+
+      const hash = await client.writeContract({
+        address: VAULT_ADDRESS, // Add this to your config
+        abi: VAULT_ABI, // Add vault ABI
+        functionName: "deposit",
+        args: [],
+        value: amountWei,
+      });
+
+      await client.waitForTransactionReceipt({ hash });
+      return hash;
+    } catch (error) {
+      console.error("Error depositing to vault:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Request available balance decryption
+  const requestAvailableBalanceDecryption = async () => {
+    setLoading(true);
+    try {
+      const client = await getClient();
+
+      const hash = await client.writeContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "requestAvailableBalanceDecryption",
+        args: [],
+      });
+
+      await client.waitForTransactionReceipt({ hash });
+      console.log("✅ Available balance decryption requested");
+      return hash;
+    } catch (error) {
+      console.error("Error requesting balance decryption:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // Get available balance status
+  const getAvailableBalanceStatus = async (): Promise<{
+    status: number;
+    availableAmount: bigint;
+    cacheExpiry: bigint;
+  }> => {
+    try {
+      const client = await getClient();
+      const userAddress = wallets[0]?.address;
+
+      if (!userAddress) throw new Error("No wallet connected");
+
+      const result = await client.readContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "getAvailableBalanceStatus",
+      });
+
+      return {
+        status: Number(result[0]),
+        availableAmount: BigInt(result[1]),
+        cacheExpiry: BigInt(result[2]),
+      };
+    } catch (error) {
+      console.error("Error fetching balance status:", error);
+      throw error;
+    }
+  };
+
+  // Withdraw from vault
+  const withdrawFromVault = async (amount: string) => {
+    setLoading(true);
+    try {
+      const client = await getClient();
+      const amountWei = parseEther(amount);
+
+      // Validate uint64 range
+      const MAX_UINT64 = BigInt("18446744073709551615");
+      if (amountWei > MAX_UINT64) {
+        throw new Error("Amount too large for uint64");
+      }
+
+      const hash = await client.writeContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "withdraw",
+        args: [amountWei],
+      });
+
+      await client.waitForTransactionReceipt({ hash });
+      return hash;
+    } catch (error) {
+      console.error("Error withdrawing from vault:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return {
     loading,
     createCampaign,
@@ -404,10 +512,13 @@ export function useCampaigns() {
     getCampaignCount,
     requestMyContributionDecryption,
     requestTotalRaisedDecryption,
-    getMyContribution,
-    getTotalRaised,
     getContributionStatus,
     checkHasContribution,
+    checkHasClaimed,
     getTotalRaisedStatus,
+    depositToVault,
+    requestAvailableBalanceDecryption,
+    getAvailableBalanceStatus,
+    withdrawFromVault,
   };
 }

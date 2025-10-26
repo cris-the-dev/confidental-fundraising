@@ -6,3 +6,5 @@ export type { impl };
 export type { IDecryptionCallbacks } from "./IDecryptionCallbacks";
 export type { IFundraisingErrors } from "./IFundraisingErrors";
 export type { IFundraisingEvents } from "./IFundraisingEvents";
+export type { IShareVaultErrors } from "./IShareVaultErrors";
+export type { IShareVaultEvents } from "./IShareVaultEvents";

@@ -17,4 +17,11 @@ interface IFundraisingErrors {
     error MyContributionNotDecrypted();
     error CacheExpired();
     error DecryptAlreadyInProgress();
+    error InvalidTarget();
+    error InvalidDuration();
+    error EmptyTitle();
+    error TokenNameRequired();
+    error TokenSymbolRequired();
+    error NoTokensToClaim();
+    error ContributionNotDecrypted();
 }

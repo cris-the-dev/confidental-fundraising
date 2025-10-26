@@ -14,4 +14,10 @@ interface IDecryptionCallbacks {
         bytes memory cleartexts,
         bytes memory decryptionProof
     ) external;
+
+    function callbackDecryptAvailableBalance(
+        uint256 requestId,
+        bytes memory cleartexts,
+        bytes memory decryptionProof
+    ) external;
 }

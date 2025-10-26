@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export { FundraisingStorage__factory } from "./FundraisingStorage__factory";
+export { ShareVaultStorage__factory } from "./ShareVaultStorage__factory";

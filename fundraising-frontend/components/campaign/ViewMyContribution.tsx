@@ -7,6 +7,7 @@ import { useCampaigns } from '../../hooks/useCampaigns';
 
 interface Props {
   campaignId: number;
+  externalProcessing?: boolean; // Flag to indicate external process (like claim) is handling decryption
 }
 
 enum DecryptStatus {
@@ -15,7 +16,7 @@ enum DecryptStatus {
   DECRYPTED = 2,
 }
 
-export function ViewMyContribution({ campaignId }: Props) {
+export function ViewMyContribution({ campaignId, externalProcessing = false }: Props) {
   const [status, setStatus] = useState<DecryptStatus>(DecryptStatus.NONE);
   const [contribution, setContribution] = useState<bigint | null>(null);
   const [cacheExpiry, setCacheExpiry] = useState<bigint>(0n);
@@ -32,7 +33,6 @@ export function ViewMyContribution({ campaignId }: Props) {
   } = useCampaigns();
   const { authenticated, user } = usePrivy();
 
-  // ✅ Use useCallback to make fetchStatus stable
   const fetchStatus = useCallback(async () => {
     if (!authenticated || !user?.wallet?.address) return;
 
@@ -61,10 +61,20 @@ export function ViewMyContribution({ campaignId }: Props) {
 
   // Initial fetch and setup polling when status is PROCESSING
   useEffect(() => {
+    // Don't fetch if external process is handling it
+    if (externalProcessing) {
+      // Clear any existing polling
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
+      return;
+    }
+
     fetchStatus();
 
-    // If processing, start polling every 5 seconds
-    if (status === DecryptStatus.PROCESSING) {
+    // If processing and not externally processing, start polling every 5 seconds
+    if (status === DecryptStatus.PROCESSING && !externalProcessing) {
       const interval = setInterval(fetchStatus, 5000);
       setPollingInterval(interval);
 
@@ -72,7 +82,7 @@ export function ViewMyContribution({ campaignId }: Props) {
         clearInterval(interval);
       };
     }
-  }, [campaignId, authenticated, user?.wallet?.address, status, fetchStatus]);
+  }, [campaignId, authenticated, user?.wallet?.address, status, fetchStatus, externalProcessing, pollingInterval]);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -173,6 +183,47 @@ export function ViewMyContribution({ campaignId }: Props) {
         <p className="text-sm text-gray-600 text-center">
           💡 You have not contributed to this campaign yet
         </p>
+      </div>
+    );
+  }
+
+  // Show external processing message
+  if (externalProcessing) {
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-blue-900">
+            👤 Your Contribution
+          </span>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-blue-300">
+          <div className="flex items-center gap-3">
+            <svg
+              className="animate-spin h-5 w-5 text-blue-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-blue-900">Processing claim...</p>
+              <p className="text-xs text-blue-700">Decryption in progress</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

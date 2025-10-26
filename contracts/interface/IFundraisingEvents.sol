@@ -19,4 +19,10 @@ interface IFundraisingEvents {
         uint256 indexed campaignId,
         address indexed contributor
     );
+    event TokensDistributed(
+        uint16 indexed campaignId,
+        address indexed contributor,
+        uint256 amount
+    );
+    event CampaignFailed(uint16 indexed campaignId);
 }
