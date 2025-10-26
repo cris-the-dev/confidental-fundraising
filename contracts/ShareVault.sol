@@ -382,8 +382,16 @@ contract ShareVault is
         // Decrease total locked
         totalLocked[user] = FHE.sub(totalLocked[user], lockedAmount);
 
+        FHE.allowThis(totalLocked[user]);
+        FHE.allow(totalLocked[user], user);
+        FHE.allow(totalLocked[user], campaignContract);
+
         // Clear campaign lock
         lockedAmounts[user][campaignId] = FHE.asEuint64(0);
+
+        FHE.allowThis(lockedAmounts[user][campaignId]);
+        FHE.allow(lockedAmounts[user][campaignId], user);
+        FHE.allow(lockedAmounts[user][campaignId], campaignContract);
 
         // Invalidate cached available balance since locked amount changed
         delete decryptedAvailableBalance[user];
@@ -419,8 +427,16 @@ contract ShareVault is
             lockedAmount
         );
 
+        FHE.allowThis(encryptedBalances[user]);
+        FHE.allow(encryptedBalances[user], user);
+        FHE.allow(encryptedBalances[user], campaignContract);
+
         // Decrease total locked
         totalLocked[user] = FHE.sub(totalLocked[user], lockedAmount);
+
+        FHE.allowThis(totalLocked[user]);
+        FHE.allow(totalLocked[user], user);
+        FHE.allow(totalLocked[user], campaignContract);
 
         // Add to owner's balance
         euint64 ownerBalance = encryptedBalances[campaignOwner];
@@ -436,10 +452,15 @@ contract ShareVault is
         // Grant permissions
         FHE.allowThis(encryptedBalances[campaignOwner]);
         FHE.allow(encryptedBalances[campaignOwner], campaignOwner);
+        FHE.allow(encryptedBalances[campaignOwner], campaignContract);
 
         // Clear campaign lock
         euint64 returnAmount = lockedAmount;
         lockedAmounts[user][campaignId] = FHE.asEuint64(0);
+
+        FHE.allowThis(lockedAmounts[user][campaignId]);
+        FHE.allow(lockedAmounts[user][campaignId], user);
+        FHE.allow(lockedAmounts[user][campaignId], campaignContract);
 
         // Invalidate cached available balance
         delete decryptedAvailableBalance[user];
@@ -448,36 +469,5 @@ contract ShareVault is
         emit FundsTransferred(user, campaignOwner, campaignId);
 
         return returnAmount;
-    }
-
-    /**
-     * @notice Retrieves the user's encrypted total balance
-     * @dev Returns the raw encrypted value. Only the user and authorized contracts
-     * can decrypt this value.
-     * @return The encrypted balance as euint64
-     */
-    function getEncryptedBalance() external view returns (euint64) {
-        return encryptedBalances[msg.sender];
-    }
-
-    /**
-     * @notice Retrieves the user's encrypted locked amount for a specific campaign
-     * @dev Returns the raw encrypted value representing funds locked for this campaign.
-     * @param campaignId The ID of the campaign
-     * @return The encrypted locked amount as euint64
-     */
-    function getLockedAmount(
-        uint16 campaignId
-    ) external view returns (euint64) {
-        return lockedAmounts[msg.sender][campaignId];
-    }
-
-    /**
-     * @notice Retrieves the user's total encrypted locked amount across all campaigns
-     * @dev Returns the sum of all campaign locks for this user.
-     * @return The total encrypted locked amount as euint64
-     */
-    function getTotalLocked() external view returns (euint64) {
-        return totalLocked[msg.sender];
     }
 }
