@@ -13,7 +13,24 @@ import "./interface/impl/DecryptionCallback.sol";
 
 /**
  * @title ShareVault
- * @notice Manages user deposits and locked funds for campaigns with decryption-based withdrawals
+ * @notice Secure vault for managing encrypted user balances and campaign fund locks
+ * @dev This contract acts as a decentralized escrow system for the ConfidentialFundraising platform.
+ * It manages encrypted ETH balances, handles fund locking for active campaigns, and enables
+ * privacy-preserving withdrawals through FHE-based balance verification.
+ *
+ * Key Features:
+ * - Encrypted balance tracking for all users
+ * - Campaign-specific fund locking mechanism
+ * - Decryption-based withdrawal authorization
+ * - Automatic balance permission management
+ * - Support for multiple simultaneous campaign locks per user
+ *
+ * Security Model:
+ * - Only the authorized campaign contract can lock/unlock/transfer funds
+ * - Users must decrypt their available balance before withdrawal
+ * - All encrypted operations use FHEVM for on-chain privacy
+ *
+ * @custom:security-contact security@example.com
  */
 contract ShareVault is
     SepoliaConfig,
@@ -39,18 +56,36 @@ contract ShareVault is
         owner = msg.sender;
     }
 
+    /**
+     * @notice Sets the authorized campaign contract address
+     * @dev Can only be called once by the owner during initial setup. This address
+     * will have exclusive permission to lock, unlock, and transfer user funds.
+     * @param _campaignContract The address of the ConfidentialFundraising contract
+     */
     function setCampaignContract(address _campaignContract) external {
-        require(msg.sender == owner, "Only owner");
-        require(campaignContract == address(0), "Already set");
+        if (msg.sender != owner) {
+            revert OnlyOwner();
+        }
+        if (campaignContract != address(0)) {
+            revert CampaignContractAlreadySet();
+        }
         campaignContract = _campaignContract;
     }
 
     /**
-     * @notice Deposit ETH into the vault
+     * @notice Deposits ETH into the vault as an encrypted balance
+     * @dev The deposited amount is encrypted on-chain and added to the user's balance.
+     * Resets any cached decrypted balance values. Grants necessary FHE permissions
+     * to the user and campaign contract.
+     * @custom:emits Deposited
      */
     function deposit() external payable {
-        require(msg.value > 0, "Must deposit more than 0");
-        require(msg.value <= type(uint64).max, "Amount too large for uint64");
+        if (msg.value == 0) {
+            revert InvalidDepositAmount();
+        }
+        if (msg.value > type(uint64).max) {
+            revert DepositAmountTooLarge();
+        }
 
         euint64 amount = FHE.asEuint64(uint64(msg.value));
         euint64 currentBalance = encryptedBalances[msg.sender];
@@ -79,7 +114,11 @@ contract ShareVault is
     }
 
     /**
-     * @notice Request decryption of available balance (balance - locked)
+     * @notice Requests decryption of the user's available balance
+     * @dev Calculates available balance as (total balance - total locked) and initiates
+     * an asynchronous decryption request. The result will be cached after the callback.
+     * Use getAvailableBalance() to retrieve the decrypted value.
+     * @custom:emits WithdrawalDecryptionRequested
      */
     function requestAvailableBalanceDecryption() external {
         if (
@@ -90,7 +129,9 @@ contract ShareVault is
         }
 
         euint64 balance = encryptedBalances[msg.sender];
-        require(FHE.isInitialized(balance), "No balance");
+        if (!FHE.isInitialized(balance)) {
+            revert NoBalance();
+        }
 
         // Calculate available balance: balance - locked
         euint64 available;
@@ -126,7 +167,10 @@ contract ShareVault is
     }
 
     /**
-     * @notice Get available balance (must decrypt first)
+     * @notice Retrieves the user's decrypted available balance
+     * @dev The balance must be decrypted first by calling requestAvailableBalanceDecryption().
+     * Returns the cached decrypted value if not expired.
+     * @return The available balance in wei (total balance minus locked amounts)
      */
     function getAvailableBalance() external view returns (uint64) {
         CommonStruct.Uint64ResultWithExp
@@ -155,7 +199,11 @@ contract ShareVault is
     }
 
     /**
-     * @notice Get available balance status
+     * @notice Retrieves the decryption status and cached available balance
+     * @dev Useful for checking if decryption is in progress or if cache is expired
+     * @return status The current decryption status (NONE/PROCESSING/DECRYPTED)
+     * @return availableAmount The cached available balance (0 if not decrypted)
+     * @return cacheExpiry The timestamp when the cached value expires
      */
     function getAvailableBalanceStatus()
         external
@@ -177,11 +225,19 @@ contract ShareVault is
     }
 
     /**
-     * @notice Withdraw unlocked funds (must decrypt available balance first)
+     * @notice Withdraws unlocked funds from the vault
+     * @dev Users must first decrypt their available balance. The decryption acts as
+     * authorization proof for the withdrawal. Resets the cached balance after withdrawal.
+     * @param amount The amount to withdraw in wei
+     * @custom:emits Withdrawn
      */
     function withdraw(uint64 amount) external {
-        require(amount > 0, "Amount must be greater than 0");
-        require(address(this).balance >= amount, "Insufficient vault balance");
+        if (amount == 0) {
+            revert InvalidWithdrawalAmount();
+        }
+        if (address(this).balance < amount) {
+            revert InsufficientVaultBalance();
+        }
 
         // Check that user has decrypted their available balance
         CommonStruct.Uint64ResultWithExp
@@ -204,7 +260,9 @@ contract ShareVault is
         }
 
         // Check if user has enough available balance
-        require(available >= amount, "Insufficient available balance");
+        if (available < amount) {
+            revert InsufficientAvailableBalance();
+        }
 
         euint64 balance = encryptedBalances[msg.sender];
         euint64 withdrawAmount = FHE.asEuint64(amount);
@@ -233,8 +291,14 @@ contract ShareVault is
     }
 
     /**
-     * @notice Lock funds for a campaign (called by campaign contract)
-     * @dev Works with encrypted balances - no decryption required
+     * @notice Locks encrypted funds for a specific campaign
+     * @dev Called exclusively by the campaign contract when a user contributes.
+     * Operates entirely on encrypted values using FHE. If insufficient funds are available,
+     * safely locks 0 instead of reverting. Invalidates cached available balance.
+     * @param user The address of the contributor
+     * @param campaignId The ID of the campaign
+     * @param amount The encrypted amount to lock
+     * @custom:emits FundsLocked
      */
     function lockFunds(
         address user,
@@ -243,7 +307,9 @@ contract ShareVault is
     ) external onlyCampaignContract {
         euint64 balance = encryptedBalances[user];
 
-        require(FHE.isInitialized(balance), "User has no balance");
+        if (!FHE.isInitialized(balance)) {
+            revert UserHasNoBalance();
+        }
 
         // Calculate available balance: balance - totalLocked
         euint64 available;
@@ -297,14 +363,21 @@ contract ShareVault is
     }
 
     /**
-     * @notice Unlock funds (campaign cancelled or failed)
+     * @notice Unlocks funds previously locked for a campaign
+     * @dev Called by the campaign contract when a campaign is cancelled or fails to reach
+     * its target. Returns funds to the user's available balance without transferring ETH.
+     * @param user The address of the contributor
+     * @param campaignId The ID of the campaign
+     * @custom:emits FundsUnlocked
      */
     function unlockFunds(
         address user,
         uint16 campaignId
     ) external onlyCampaignContract {
         euint64 lockedAmount = lockedAmounts[user][campaignId];
-        require(FHE.isInitialized(lockedAmount), "No locked amount");
+        if (!FHE.isInitialized(lockedAmount)) {
+            revert NoLockedAmount();
+        }
 
         // Decrease total locked
         totalLocked[user] = FHE.sub(totalLocked[user], lockedAmount);
@@ -320,7 +393,15 @@ contract ShareVault is
     }
 
     /**
-     * @notice Transfer locked funds to campaign owner (campaign succeeded)
+     * @notice Transfers locked funds from contributor to campaign owner
+     * @dev Called by the campaign contract when a campaign succeeds. Moves encrypted funds
+     * from the contributor's balance to the campaign owner's balance within the vault.
+     * Does not transfer actual ETH - funds remain in the vault.
+     * @param user The address of the contributor
+     * @param campaignOwner The address of the campaign owner
+     * @param campaignId The ID of the successful campaign
+     * @return The encrypted locked amount that was transferred
+     * @custom:emits FundsTransferred
      */
     function transferLockedFunds(
         address user,
@@ -328,7 +409,9 @@ contract ShareVault is
         uint16 campaignId
     ) external onlyCampaignContract returns (euint64) {
         euint64 lockedAmount = lockedAmounts[user][campaignId];
-        require(FHE.isInitialized(lockedAmount), "No locked amount");
+        if (!FHE.isInitialized(lockedAmount)) {
+            revert NoLockedAmount();
+        }
 
         // Deduct from user's balance
         encryptedBalances[user] = FHE.sub(
@@ -368,14 +451,20 @@ contract ShareVault is
     }
 
     /**
-     * @notice Get encrypted balance for user
+     * @notice Retrieves the user's encrypted total balance
+     * @dev Returns the raw encrypted value. Only the user and authorized contracts
+     * can decrypt this value.
+     * @return The encrypted balance as euint64
      */
     function getEncryptedBalance() external view returns (euint64) {
         return encryptedBalances[msg.sender];
     }
 
     /**
-     * @notice Get encrypted locked amount for campaign
+     * @notice Retrieves the user's encrypted locked amount for a specific campaign
+     * @dev Returns the raw encrypted value representing funds locked for this campaign.
+     * @param campaignId The ID of the campaign
+     * @return The encrypted locked amount as euint64
      */
     function getLockedAmount(
         uint16 campaignId
@@ -384,7 +473,9 @@ contract ShareVault is
     }
 
     /**
-     * @notice Get total encrypted locked for user
+     * @notice Retrieves the user's total encrypted locked amount across all campaigns
+     * @dev Returns the sum of all campaign locks for this user.
+     * @return The total encrypted locked amount as euint64
      */
     function getTotalLocked() external view returns (euint64) {
         return totalLocked[msg.sender];

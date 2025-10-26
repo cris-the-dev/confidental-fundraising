@@ -10,4 +10,14 @@ interface IShareVaultErrors {
     error DecryptionProcessing();
     error DecryptionCacheExpired();
     error DecryptAlreadyInProgress();
+    error OnlyOwner();
+    error CampaignContractAlreadySet();
+    error InvalidDepositAmount();
+    error DepositAmountTooLarge();
+    error NoBalance();
+    error InvalidWithdrawalAmount();
+    error InsufficientVaultBalance();
+    error InsufficientAvailableBalance();
+    error UserHasNoBalance();
+    error NoLockedAmount();
 }

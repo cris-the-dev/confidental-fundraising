@@ -14,10 +14,21 @@ import "./ShareVault.sol";
 
 /**
  * @title ConfidentialFundraising
- * @notice A private fundraising platform where contribution amounts remain encrypted
- * @dev Uses FHEVM to keep individual contributions private while tracking totals
+ * @notice A privacy-preserving crowdfunding platform using fully homomorphic encryption (FHE)
+ * @dev This contract enables confidential fundraising campaigns where contribution amounts remain encrypted
+ * on-chain. It leverages FHEVM to perform operations on encrypted data without revealing individual
+ * contribution amounts. Only authorized parties can decrypt specific values after requesting decryption.
  *
- * contribution amount and target will be stored as ether, not wei for reducing complexity while crypting
+ * Key Features:
+ * - Encrypted contribution tracking using FHE
+ * - Decentralized fund management through ShareVault
+ * - Automatic token distribution for successful campaigns
+ * - Refund mechanism for failed campaigns
+ * - Time-based campaign deadlines
+ *
+ * @custom:security-contact security@example.com
+ *
+ * Note: Contribution amounts and targets are stored in wei, not ether units
  */
 contract ConfidentialFundraising is
     SepoliaConfig,
@@ -43,15 +54,32 @@ contract ConfidentialFundraising is
         shareVault = ShareVault(_shareVault);
     }
 
+    /**
+     * @notice Creates a new fundraising campaign
+     * @dev Initializes an encrypted total raised counter and sets campaign parameters.
+     * The campaign owner can later finalize it after the deadline to distribute tokens or refunds.
+     * @param title The campaign title (must not be empty)
+     * @param description The campaign description
+     * @param target The funding target amount in wei (must be greater than 0)
+     * @param duration The campaign duration in seconds (must be greater than 0)
+     * @return The newly created campaign ID
+     * @custom:emits CampaignCreated
+     */
     function createCampaign(
         string calldata title,
         string calldata description,
         uint64 target,
         uint256 duration
     ) external returns (uint256) {
-        require(target > 0, "Target must be greater than 0");
-        require(duration > 0, "Duration must be greater than 0");
-        require(bytes(title).length > 0, "Title cannot be empty");
+        if (target == 0) {
+            revert InvalidTarget();
+        }
+        if (duration == 0) {
+            revert InvalidDuration();
+        }
+        if (bytes(title).length == 0) {
+            revert EmptyTitle();
+        }
 
         uint16 campaignId = campaignCount++;
 
@@ -81,6 +109,16 @@ contract ConfidentialFundraising is
         return campaignId;
     }
 
+    /**
+     * @notice Make an encrypted contribution to a campaign
+     * @dev The contribution amount is encrypted and locked in the ShareVault. The actual amount
+     * remains private on-chain and can only be decrypted by authorized parties. Funds are locked
+     * until the campaign is finalized (either transferred to owner or refunded).
+     * @param campaignId The ID of the campaign to contribute to
+     * @param encryptedAmount The encrypted contribution amount (must be pre-encrypted by user)
+     * @param inputProof Zero-knowledge proof validating the encrypted input
+     * @custom:emits ContributionMade
+     */
     function contribute(
         uint16 campaignId,
         externalEuint64 encryptedAmount,
@@ -146,10 +184,16 @@ contract ConfidentialFundraising is
     }
 
     /**
-     * @notice Finalize campaign (owner decides token name/symbol at this point)
-     * @param campaignId Campaign ID
-     * @param tokenName Token name (if target reached)
-     * @param tokenSymbol Token symbol (if target reached)
+     * @notice Finalizes a campaign after its deadline has passed
+     * @dev This function can only be called by the campaign owner after the deadline.
+     * The owner must first call requestTotalRaisedDecryption() to decrypt the total amount raised.
+     * If the target is reached, a new ERC20 token is deployed and funds are transferred to the owner.
+     * If the target is not reached, all locked funds are unlocked for contributor withdrawal.
+     * @param campaignId The ID of the campaign to finalize
+     * @param tokenName The name for the campaign token (required if target reached, can be empty otherwise)
+     * @param tokenSymbol The symbol for the campaign token (required if target reached, can be empty otherwise)
+     * @custom:emits CampaignFinalized
+     * @custom:emits CampaignFailed (if target not reached)
      */
     function finalizeCampaign(
         uint16 campaignId,
@@ -180,14 +224,20 @@ contract ConfidentialFundraising is
             memory decryptedWithExp = decryptedTotalRaised[campaignId];
         uint64 totalRaised = decryptedWithExp.data;
 
-        require(totalRaised > 0, "Must decrypt total raised first");
+        if (totalRaised == 0) {
+            revert TotalRaisedNotDecrypted();
+        }
 
         campaign.finalized = true;
 
         if (totalRaised >= campaign.targetAmount) {
             // TARGET REACHED - Deploy token and transfer funds
-            require(bytes(tokenName).length > 0, "Token name required");
-            require(bytes(tokenSymbol).length > 0, "Token symbol required");
+            if (bytes(tokenName).length == 0) {
+                revert TokenNameRequired();
+            }
+            if (bytes(tokenSymbol).length == 0) {
+                revert TokenSymbolRequired();
+            }
 
             // Deploy campaign token
             CampaignToken token = new CampaignToken(
@@ -222,6 +272,13 @@ contract ConfidentialFundraising is
         }
     }
 
+    /**
+     * @notice Cancels an active campaign before its deadline
+     * @dev Only the campaign owner can cancel. This immediately unlocks all contributor funds
+     * and prevents any further contributions. The campaign cannot be finalized after cancellation.
+     * @param campaignId The ID of the campaign to cancel
+     * @custom:emits CampaignCancelled
+     */
     function cancelCampaign(
         uint16 campaignId
     ) external onlyCampaignOwner(campaignId) {
@@ -241,7 +298,7 @@ contract ConfidentialFundraising is
 
         campaign.cancelled = true;
 
-        // ✅ Unlock all funds
+        // Unlock all funds
         address[] memory contributors = campaignContributors[campaignId];
         for (uint256 i = 0; i < contributors.length; i++) {
             shareVault.unlockFunds(contributors[i], campaignId);
@@ -251,8 +308,13 @@ contract ConfidentialFundraising is
     }
 
     /**
-     * @notice Claim tokens after campaign succeeded
-     * @param campaignId Campaign ID
+     * @notice Claims campaign tokens for a contributor after successful campaign finalization
+     * @dev Contributors must first decrypt their contribution amount by calling requestMyContributionDecryption().
+     * Tokens are distributed proportionally based on contribution amount relative to the target amount.
+     * Each contributor can only claim once.
+     * @param campaignId The ID of the successful campaign
+     * @custom:emits TokensClaimed
+     * @custom:emits TokensDistributed
      */
     function claimTokens(uint16 campaignId) external {
         FundraisingStruct.Campaign storage campaign = campaigns[campaignId];
@@ -266,7 +328,7 @@ contract ConfidentialFundraising is
         }
 
         if (campaign.tokenAddress == address(0)) {
-            revert("Campaign failed - no tokens to claim");
+            revert NoTokensToClaim();
         }
 
         if (hasClaimed[campaignId][msg.sender]) {
@@ -280,10 +342,9 @@ contract ConfidentialFundraising is
             ];
         uint64 contributionAmount = decryptedWithExp.data;
 
-        require(
-            contributionAmount > 0,
-            "Must decrypt your contribution first or you contributed 0"
-        );
+        if (contributionAmount == 0) {
+            revert ContributionNotDecrypted();
+        }
 
         // Calculate tokens based on proportion of target
         // Formula: (userContribution / targetAmount) * 1_000_000_000 tokens
@@ -302,6 +363,18 @@ contract ConfidentialFundraising is
         emit TokensDistributed(campaignId, msg.sender, tokenAmount);
     }
 
+    /**
+     * @notice Retrieves public campaign information
+     * @dev Returns non-sensitive campaign data. Encrypted contribution amounts are not included.
+     * @param campaignId The ID of the campaign
+     * @return owner The address of the campaign creator
+     * @return title The campaign title
+     * @return description The campaign description
+     * @return targetAmount The funding target in wei
+     * @return deadline The campaign deadline timestamp
+     * @return finalized Whether the campaign has been finalized
+     * @return cancelled Whether the campaign has been cancelled
+     */
     function getCampaign(
         uint16 campaignId
     )
@@ -333,6 +406,13 @@ contract ConfidentialFundraising is
         );
     }
 
+    /**
+     * @notice Requests decryption of the caller's contribution amount
+     * @dev Initiates an asynchronous decryption process. The result will be available after
+     * the decryption callback is executed. Use getMyContribution() to retrieve the decrypted value.
+     * @param campaignId The ID of the campaign
+     * @custom:emits DecryptionRequested (via callback system)
+     */
     function requestMyContributionDecryption(uint16 campaignId) public {
         euint64 userContribution = encryptedContributions[campaignId][
             msg.sender
@@ -369,6 +449,13 @@ contract ConfidentialFundraising is
             .PROCESSING;
     }
 
+    /**
+     * @notice Retrieves the caller's decrypted contribution amount
+     * @dev The contribution must be decrypted first by calling requestMyContributionDecryption().
+     * The decrypted value is cached with an expiration time.
+     * @param campaignId The ID of the campaign
+     * @return The decrypted contribution amount in wei
+     */
     function getMyContribution(
         uint16 campaignId
     ) external view returns (uint64) {
@@ -397,6 +484,13 @@ contract ConfidentialFundraising is
         revert MyContributionNotDecrypted();
     }
 
+    /**
+     * @notice Requests decryption of the total amount raised for a campaign
+     * @dev Only the campaign owner can request this. Required before finalizing a campaign.
+     * Initiates an asynchronous decryption process. Use getTotalRaised() to retrieve the result.
+     * @param campaignId The ID of the campaign
+     * @custom:emits DecryptionRequested (via callback system)
+     */
     function requestTotalRaisedDecryption(
         uint16 campaignId
     ) public onlyCampaignOwner(campaignId) {
@@ -423,6 +517,13 @@ contract ConfidentialFundraising is
             .PROCESSING;
     }
 
+    /**
+     * @notice Retrieves the decrypted total amount raised for a campaign
+     * @dev Only the campaign owner can call this. The total must be decrypted first by calling
+     * requestTotalRaisedDecryption(). The decrypted value is cached with an expiration time.
+     * @param campaignId The ID of the campaign
+     * @return The decrypted total amount raised in wei
+     */
     function getTotalRaised(
         uint16 campaignId
     ) external view onlyCampaignOwner(campaignId) returns (uint64) {
@@ -521,6 +622,13 @@ contract ConfidentialFundraising is
         return FHE.isInitialized(encryptedContributions[campaignId][user]);
     }
 
+    /**
+     * @notice Retrieves the list of all contributors to a campaign
+     * @dev Returns addresses of all users who have made at least one contribution.
+     * Does not reveal contribution amounts.
+     * @param campaignId The ID of the campaign
+     * @return Array of contributor addresses
+     */
     function getCampaignContributors(
         uint16 campaignId
     ) external view returns (address[] memory) {
