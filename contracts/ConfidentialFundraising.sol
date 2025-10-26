@@ -387,7 +387,8 @@ contract ConfidentialFundraising is
             uint64 targetAmount,
             uint256 deadline,
             bool finalized,
-            bool cancelled
+            bool cancelled,
+            address tokenAddress
         )
     {
         if (campaignId >= campaignCount) {
@@ -402,7 +403,8 @@ contract ConfidentialFundraising is
             campaign.targetAmount,
             campaign.deadline,
             campaign.finalized,
-            campaign.cancelled
+            campaign.cancelled,
+            campaign.tokenAddress
         );
     }
 

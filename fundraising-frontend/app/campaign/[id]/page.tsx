@@ -12,6 +12,7 @@ import { ViewCampaignTotal } from '../../../components/campaign/ViewCampaignTota
 import { ViewMyContribution } from '../../../components/campaign/ViewMyContribution';
 import ContributeForm from '../../../components/campaign/ContributionForm';
 import { FinalizeCampaignModal } from '../../../components/campaign/FinalizeCampaignModal';
+import { CampaignTokenBalance } from '../../../components/campaign/CampaignTokenBalance';
 
 export default function CampaignDetail() {
   const params = useParams();
@@ -23,6 +24,7 @@ export default function CampaignDetail() {
     getCampaign,
     getContributionStatus,
     requestMyContributionDecryption,
+    checkHasClaimed,
     loading
   } = useCampaigns();
   
@@ -34,6 +36,10 @@ export default function CampaignDetail() {
   const [isClaimingProcess, setIsClaimingProcess] = useState(false);
   const [claimingStep, setClaimingStep] = useState<string>('');
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [tokenBalanceKey, setTokenBalanceKey] = useState(0); // Key to force re-render token balance
+  const [contributionKey, setContributionKey] = useState(0); // Key to force re-render contribution
+  const [hasClaimed, setHasClaimed] = useState(false);
+  const [checkingClaimStatus, setCheckingClaimStatus] = useState(false);
 
   const campaignId = parseInt(params.id as string);
 
@@ -41,6 +47,13 @@ export default function CampaignDetail() {
     loadCampaign();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
+
+  useEffect(() => {
+    if (campaign && authenticated && user?.wallet?.address) {
+      checkClaimStatus();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaign, authenticated, user?.wallet?.address]);
 
   const loadCampaign = async () => {
     try {
@@ -53,6 +66,22 @@ export default function CampaignDetail() {
       setError(err.message || 'Failed to load campaign');
     } finally {
       setLoadingCampaign(false);
+    }
+  };
+
+  const checkClaimStatus = async () => {
+    if (!authenticated || !user?.wallet?.address) {
+      return;
+    }
+
+    setCheckingClaimStatus(true);
+    try {
+      const claimed = await checkHasClaimed(campaignId, user.wallet.address);
+      setHasClaimed(claimed);
+    } catch (err) {
+      console.error('Error checking claim status:', err);
+    } finally {
+      setCheckingClaimStatus(false);
     }
   };
 
@@ -135,6 +164,13 @@ export default function CampaignDetail() {
 
       setActionSuccess('Tokens claimed successfully!');
       setClaimingStep('');
+
+      // Refresh token balance and contribution display after claiming
+      setTokenBalanceKey(prev => prev + 1);
+      setContributionKey(prev => prev + 1);
+
+      // Update claim status
+      setHasClaimed(true);
     } catch (err: any) {
       console.error('Claim error:', err);
 
@@ -165,7 +201,7 @@ export default function CampaignDetail() {
   ): Promise<{ contribution: bigint } | null> => {
     return new Promise((resolve, reject) => {
       let attempts = 0;
-      const maxAttempts = 40; // 40 * 3 seconds = 2 minutes max
+      const maxAttempts = 24; // 24 * 5 seconds = 2 minutes max
 
       const interval = setInterval(async () => {
         attempts++;
@@ -190,7 +226,7 @@ export default function CampaignDetail() {
             reject(err);
           }
         }
-      }, 3000); // Poll every 3 seconds
+      }, 5000); // Poll every 5 seconds to match ViewMyContribution and avoid rate limits
 
       setPollingInterval(interval);
     });
@@ -334,8 +370,26 @@ export default function CampaignDetail() {
                 </h2>
                 <div className="space-y-4">
                   <ViewCampaignTotal campaignId={campaignId} isOwner={isOwner} />
-                  <ViewMyContribution campaignId={campaignId} />
+                  <ViewMyContribution
+                    key={contributionKey}
+                    campaignId={campaignId}
+                    externalProcessing={isClaimingProcess}
+                  />
                 </div>
+              </div>
+            )}
+
+            {/* Token Balance Section */}
+            {authenticated && campaign.finalized && campaign.tokenAddress && campaign.tokenAddress !== '0x0000000000000000000000000000000000000000' && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  💰 Campaign Tokens
+                </h2>
+                <CampaignTokenBalance
+                  key={tokenBalanceKey}
+                  tokenAddress={campaign.tokenAddress}
+                  campaignTitle={campaign.title}
+                />
               </div>
             )}
 
@@ -415,70 +469,120 @@ export default function CampaignDetail() {
 
                 {campaign.finalized && authenticated && campaign.tokenAddress !== '0x0000000000000000000000000000000000000000' && (
                   <div className="mt-4">
-                    {claimingStep && (
-                      <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2">
+                    {hasClaimed ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
                           <svg
-                            className="animate-spin h-4 w-4 text-blue-600"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
+                            className="h-5 w-5 text-green-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
                           >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
                             <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
                           </svg>
-                          <p className="text-sm text-blue-800">{claimingStep}</p>
+                          <p className="text-sm font-medium text-green-800">
+                            Tokens Already Claimed
+                          </p>
                         </div>
+                        <p className="text-xs text-green-700">
+                          You have successfully claimed your campaign tokens. Check your token balance above.
+                        </p>
                       </div>
-                    )}
-                    <button
-                      onClick={handleClaim}
-                      disabled={loading || isClaimingProcess}
-                      className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isClaimingProcess ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg
-                            className="animate-spin h-5 w-5"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                          Processing...
-                        </span>
-                      ) : (
-                        'Claim Tokens'
-                      )}
-                    </button>
-                    {!isClaimingProcess && (
-                      <p className="text-xs text-gray-500 mt-2 text-center">
-                        💡 Your contribution will be automatically decrypted if needed
-                      </p>
+                    ) : (
+                      <>
+                        {claimingStep && (
+                          <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div className="flex items-center gap-2">
+                              <svg
+                                className="animate-spin h-4 w-4 text-blue-600"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                              <p className="text-sm text-blue-800">{claimingStep}</p>
+                            </div>
+                          </div>
+                        )}
+                        <button
+                          onClick={handleClaim}
+                          disabled={loading || isClaimingProcess || checkingClaimStatus}
+                          className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {checkingClaimStatus ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <svg
+                                className="animate-spin h-5 w-5"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                              Checking...
+                            </span>
+                          ) : isClaimingProcess ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <svg
+                                className="animate-spin h-5 w-5"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                              Processing...
+                            </span>
+                          ) : (
+                            'Claim Tokens'
+                          )}
+                        </button>
+                        {!isClaimingProcess && !checkingClaimStatus && (
+                          <p className="text-xs text-gray-500 mt-2 text-center">
+                            💡 Your contribution will be automatically decrypted if needed
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

@@ -6,6 +6,11 @@ export const VAULT_ABI = [
   },
   {
     inputs: [],
+    name: "CampaignContractAlreadySet",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "DecryptAlreadyInProgress",
     type: "error",
   },
@@ -21,7 +26,17 @@ export const VAULT_ABI = [
   },
   {
     inputs: [],
+    name: "DepositAmountTooLarge",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "HandlesAlreadySavedForRequestID",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InsufficientAvailableBalance",
     type: "error",
   },
   {
@@ -36,7 +51,22 @@ export const VAULT_ABI = [
   },
   {
     inputs: [],
+    name: "InsufficientVaultBalance",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidDepositAmount",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "InvalidKMSSignatures",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidWithdrawalAmount",
     type: "error",
   },
   {
@@ -46,12 +76,32 @@ export const VAULT_ABI = [
   },
   {
     inputs: [],
+    name: "NoBalance",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "NoHandleFoundForRequestID",
     type: "error",
   },
   {
     inputs: [],
+    name: "NoLockedAmount",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "OnlyCampaignContract",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "OnlyOwner",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "UserHasNoBalance",
     type: "error",
   },
   {

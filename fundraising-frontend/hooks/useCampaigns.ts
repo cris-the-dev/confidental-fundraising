@@ -261,6 +261,7 @@ export function useCampaigns() {
         deadline: Number(result[4]),
         finalized: result[5],
         cancelled: result[6],
+        tokenAddress: result[7],
       };
     } catch (error) {
       console.error("Error fetching campaign:", error);
@@ -331,6 +332,27 @@ export function useCampaigns() {
       return result as boolean;
     } catch (error) {
       console.error("Error checking contribution:", error);
+      return false;
+    }
+  };
+
+  const checkHasClaimed = async (
+    campaignId: number,
+    userAddress: string
+  ): Promise<boolean> => {
+    try {
+      const client = await getClient();
+
+      const result = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "hasClaimed",
+        args: [campaignId, userAddress as `0x${string}`],
+      });
+
+      return result as boolean;
+    } catch (error) {
+      console.error("Error checking if claimed:", error);
       return false;
     }
   };
@@ -492,6 +514,7 @@ export function useCampaigns() {
     requestTotalRaisedDecryption,
     getContributionStatus,
     checkHasContribution,
+    checkHasClaimed,
     getTotalRaisedStatus,
     depositToVault,
     requestAvailableBalanceDecryption,
