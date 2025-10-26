@@ -70,6 +70,11 @@ contract ShareVault is
             FHE.allow(encryptedBalances[msg.sender], campaignContract);
         }
 
+        // Reset cache
+        decryptedAvailableBalance[msg.sender].data = 0;
+        decryptedAvailableBalance[msg.sender].exp = 0;
+        availableBalanceStatus[msg.sender] = CommonStruct.DecryptStatus.NONE;
+
         emit Deposited(msg.sender, msg.value);
     }
 
@@ -207,8 +212,18 @@ contract ShareVault is
         // Update balance
         encryptedBalances[msg.sender] = FHE.sub(balance, withdrawAmount);
 
-        // Update cached available balance
-        decryptedAvailableBalance[msg.sender].data = available - amount;
+        FHE.allowThis(encryptedBalances[msg.sender]);
+        FHE.allow(encryptedBalances[msg.sender], msg.sender);
+
+        // Only allow campaignContract if it's set
+        if (campaignContract != address(0)) {
+            FHE.allow(encryptedBalances[msg.sender], campaignContract);
+        }
+
+        // Reset cache
+        decryptedAvailableBalance[msg.sender].data = 0;
+        decryptedAvailableBalance[msg.sender].exp = 0;
+        availableBalanceStatus[msg.sender] = CommonStruct.DecryptStatus.NONE;
 
         // Transfer ETH
         (bool success, ) = payable(msg.sender).call{value: amount}("");
