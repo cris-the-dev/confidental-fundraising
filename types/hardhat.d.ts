@@ -117,22 +117,6 @@ declare module "hardhat/types/runtime" {
       name: "ShareVaultStorage",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ShareVaultStorage__factory>;
-    getContractFactory(
-      name: "EthereumZamaFHEVMConfig",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.EthereumZamaFHEVMConfig__factory>;
-    getContractFactory(
-      name: "SepoliaZamaFHEVMConfig",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.SepoliaZamaFHEVMConfig__factory>;
-    getContractFactory(
-      name: "IACL",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IACL__factory>;
-    getContractFactory(
-      name: "ITFHEExecutor",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ITFHEExecutor__factory>;
 
     getContractAt(
       name: "EthereumConfig",
@@ -264,26 +248,6 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.ShareVaultStorage>;
-    getContractAt(
-      name: "EthereumZamaFHEVMConfig",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.EthereumZamaFHEVMConfig>;
-    getContractAt(
-      name: "SepoliaZamaFHEVMConfig",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.SepoliaZamaFHEVMConfig>;
-    getContractAt(
-      name: "IACL",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IACL>;
-    getContractAt(
-      name: "ITFHEExecutor",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ITFHEExecutor>;
 
     deployContract(
       name: "EthereumConfig",
@@ -389,22 +353,6 @@ declare module "hardhat/types/runtime" {
       name: "ShareVaultStorage",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ShareVaultStorage>;
-    deployContract(
-      name: "EthereumZamaFHEVMConfig",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.EthereumZamaFHEVMConfig>;
-    deployContract(
-      name: "SepoliaZamaFHEVMConfig",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.SepoliaZamaFHEVMConfig>;
-    deployContract(
-      name: "IACL",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IACL>;
-    deployContract(
-      name: "ITFHEExecutor",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ITFHEExecutor>;
 
     deployContract(
       name: "EthereumConfig",
@@ -536,26 +484,6 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ShareVaultStorage>;
-    deployContract(
-      name: "EthereumZamaFHEVMConfig",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.EthereumZamaFHEVMConfig>;
-    deployContract(
-      name: "SepoliaZamaFHEVMConfig",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.SepoliaZamaFHEVMConfig>;
-    deployContract(
-      name: "IACL",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IACL>;
-    deployContract(
-      name: "ITFHEExecutor",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ITFHEExecutor>;
 
     // default types
     getContractFactory(

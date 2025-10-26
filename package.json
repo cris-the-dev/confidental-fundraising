@@ -7,8 +7,11 @@
     "test": "hardhat test",
     "test:mock": "hardhat test --network hardhat",
     "coverage:mock": "hardhat coverage",
-    "deploy:localhost": "hardhat deploy --network localhost",
-    "deploy:sepolia": "hardhat deploy --network sepolia",
+    "deploy": "./deploy.sh sepolia",
+    "deploy:localhost": "./deploy.sh localhost",
+    "deploy:sepolia": "./deploy.sh sepolia",
+    "deploy:manual:localhost": "hardhat deploy --network localhost",
+    "deploy:manual:sepolia": "hardhat deploy --network sepolia",
     "node": "hardhat node",
     "clean": "hardhat clean",
     "verify:sepolia": "hardhat verify --network sepolia"

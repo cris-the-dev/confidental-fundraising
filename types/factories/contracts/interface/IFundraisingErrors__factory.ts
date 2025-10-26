@@ -51,6 +51,11 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "ContributionNotDecrypted",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "ContributionNotFound",
     type: "error",
   },
@@ -66,12 +71,42 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "EmptyTitle",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidDuration",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidTarget",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "MyContributionNotDecrypted",
     type: "error",
   },
   {
     inputs: [],
+    name: "NoTokensToClaim",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "OnlyOwner",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "TokenNameRequired",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "TokenSymbolRequired",
     type: "error",
   },
   {

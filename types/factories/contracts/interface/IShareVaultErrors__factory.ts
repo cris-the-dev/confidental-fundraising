@@ -11,6 +11,11 @@ import type {
 const _abi = [
   {
     inputs: [],
+    name: "CampaignContractAlreadySet",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "DecryptAlreadyInProgress",
     type: "error",
   },
@@ -26,6 +31,16 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "DepositAmountTooLarge",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InsufficientAvailableBalance",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "InsufficientBalance",
     type: "error",
   },
@@ -36,12 +51,47 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "InsufficientVaultBalance",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidDepositAmount",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidWithdrawalAmount",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "MustDecryptFirst",
     type: "error",
   },
   {
     inputs: [],
+    name: "NoBalance",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "NoLockedAmount",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "OnlyCampaignContract",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "OnlyOwner",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "UserHasNoBalance",
     type: "error",
   },
   {

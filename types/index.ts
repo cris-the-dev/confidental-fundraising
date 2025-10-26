@@ -7,7 +7,6 @@ import type * as openzeppelin from "./@openzeppelin";
 export type { openzeppelin };
 import type * as contracts from "./contracts";
 export type { contracts };
-import type * as fhevm from "./fhevm";
 export * as factories from "./factories";
 export type { EthereumConfig } from "./@fhevm/solidity/config/ZamaConfig.sol/EthereumConfig";
 export { EthereumConfig__factory } from "./factories/@fhevm/solidity/config/ZamaConfig.sol/EthereumConfig__factory";
@@ -61,9 +60,3 @@ export type { FundraisingStorage } from "./contracts/storage/FundraisingStorage"
 export { FundraisingStorage__factory } from "./factories/contracts/storage/FundraisingStorage__factory";
 export type { ShareVaultStorage } from "./contracts/storage/ShareVaultStorage";
 export { ShareVaultStorage__factory } from "./factories/contracts/storage/ShareVaultStorage__factory";
-export type { EthereumZamaFHEVMConfig } from "./fhevm/config/ZamaFHEVMConfig.sol/EthereumZamaFHEVMConfig";
-export { EthereumZamaFHEVMConfig__factory } from "./factories/fhevm/config/ZamaFHEVMConfig.sol/EthereumZamaFHEVMConfig__factory";
-export type { SepoliaZamaFHEVMConfig } from "./fhevm/config/ZamaFHEVMConfig.sol/SepoliaZamaFHEVMConfig";
-export { SepoliaZamaFHEVMConfig__factory } from "./factories/fhevm/config/ZamaFHEVMConfig.sol/SepoliaZamaFHEVMConfig__factory";
-export type { ITFHEExecutor } from "./fhevm/lib/Impl.sol/ITFHEExecutor";
-export { ITFHEExecutor__factory } from "./factories/fhevm/lib/Impl.sol/ITFHEExecutor__factory";
