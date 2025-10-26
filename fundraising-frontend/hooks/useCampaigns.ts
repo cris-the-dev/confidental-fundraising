@@ -170,41 +170,6 @@ export function useCampaigns() {
     }
   };
 
-  const getMyContribution = async (campaignId: number): Promise<bigint> => {
-    try {
-      const client = await getClient();
-
-      const contribution = await client.readContract({
-        address: CONTRACT_ADDRESS,
-        abi: FUNDRAISING_ABI,
-        functionName: "getMyContribution",
-        args: [campaignId],
-      });
-
-      return BigInt(contribution);
-    } catch (error) {
-      console.error("Error fetching my contribution:", error);
-      throw error;
-    }
-  };
-
-  const getTotalRaised = async (campaignId: number): Promise<bigint> => {
-    try {
-      const client = await getClient();
-
-      const total = await client.readContract({
-        address: CONTRACT_ADDRESS,
-        abi: FUNDRAISING_ABI,
-        functionName: "getTotalRaised",
-        args: [campaignId],
-      });
-
-      return BigInt(total);
-    } catch (error) {
-      console.error("Error fetching total raised:", error);
-      throw error;
-    }
-  };
 
   const finalizeCampaign = async (
     campaignId: number,
@@ -453,24 +418,6 @@ export function useCampaigns() {
     }
   };
 
-  // Get available balance
-  const getAvailableBalance = async (): Promise<bigint> => {
-    try {
-      const client = await getClient();
-
-      const balance = await client.readContract({
-        address: VAULT_ADDRESS,
-        abi: VAULT_ABI,
-        functionName: "getAvailableBalance",
-        args: [],
-      });
-
-      return BigInt(balance);
-    } catch (error) {
-      console.error("Error fetching available balance:", error);
-      throw error;
-    }
-  };
 
   // Get available balance status
   const getAvailableBalanceStatus = async (): Promise<{
@@ -531,41 +478,6 @@ export function useCampaigns() {
     }
   };
 
-  // Get encrypted balance (for display purposes)
-  const getEncryptedBalance = async (): Promise<bigint> => {
-    try {
-      const client = await getClient();
-
-      const balance = await client.readContract({
-        address: VAULT_ADDRESS,
-        abi: VAULT_ABI,
-        functionName: "getEncryptedBalance",
-      });
-
-      return BigInt(balance);
-    } catch (error) {
-      console.error("Error fetching encrypted balance:", error);
-      throw error;
-    }
-  };
-
-  // Get total locked
-  const getTotalLocked = async (): Promise<bigint> => {
-    try {
-      const client = await getClient();
-
-      const locked = await client.readContract({
-        address: VAULT_ADDRESS,
-        abi: VAULT_ABI,
-        functionName: "getTotalLocked",
-      });
-
-      return BigInt(locked);
-    } catch (error) {
-      console.error("Error fetching total locked:", error);
-      throw error;
-    }
-  };
 
   return {
     loading,
@@ -578,17 +490,12 @@ export function useCampaigns() {
     getCampaignCount,
     requestMyContributionDecryption,
     requestTotalRaisedDecryption,
-    getMyContribution,
-    getTotalRaised,
     getContributionStatus,
     checkHasContribution,
     getTotalRaisedStatus,
     depositToVault,
     requestAvailableBalanceDecryption,
-    getAvailableBalance,
     getAvailableBalanceStatus,
     withdrawFromVault,
-    getEncryptedBalance,
-    getTotalLocked,
   };
 }

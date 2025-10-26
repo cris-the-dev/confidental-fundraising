@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { usePrivy } from '@privy-io/react-auth';
 import { formatEther } from 'viem';
-import { Campaign } from '../../../types';
+import { Campaign, DecryptStatus } from '../../../types';
 import { useCampaigns } from '../../../hooks/useCampaigns';
 import { ViewCampaignTotal } from '../../../components/campaign/ViewCampaignTotal';
 import { ViewMyContribution } from '../../../components/campaign/ViewMyContribution';
@@ -17,13 +17,23 @@ export default function CampaignDetail() {
   const params = useParams();
   const router = useRouter();
   const { user, authenticated } = usePrivy();
-  const { cancelCampaign, claimTokens, getCampaign, loading } = useCampaigns();
+  const {
+    cancelCampaign,
+    claimTokens,
+    getCampaign,
+    getContributionStatus,
+    requestMyContributionDecryption,
+    loading
+  } = useCampaigns();
   
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loadingCampaign, setLoadingCampaign] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [isClaimingProcess, setIsClaimingProcess] = useState(false);
+  const [claimingStep, setClaimingStep] = useState<string>('');
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   const campaignId = parseInt(params.id as string);
 
@@ -72,16 +82,118 @@ export default function CampaignDetail() {
     }
   };
 
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
   const handleClaim = async () => {
-    try {
-      setError(null);
-      setActionSuccess(null);
-      await claimTokens(campaignId);
-      setActionSuccess('Tokens claimed successfully!');
-    
-    } catch (err: any) {
-      setError(err.message || 'Failed to claim tokens');
+    if (!authenticated || !user?.wallet?.address) {
+      setError('Please connect your wallet');
+      return;
     }
+
+    setError(null);
+    setActionSuccess(null);
+    setIsClaimingProcess(true);
+
+    try {
+      // Step 1: Check contribution status
+      setClaimingStep('Checking your contribution status...');
+      const status = await getContributionStatus(campaignId, user.wallet.address);
+
+      // Step 2: If not decrypted, request decryption
+      if (status.status === DecryptStatus.NONE || (status.status === DecryptStatus.DECRYPTED && status.contribution === 0n)) {
+        setClaimingStep('Your contribution needs to be decrypted first...');
+        await requestMyContributionDecryption(campaignId);
+
+        // Wait and poll for decryption to complete
+        setClaimingStep('Waiting for decryption (10-30 seconds)...');
+
+        const decryptedData = await waitForDecryption(campaignId, user.wallet.address);
+
+        if (!decryptedData || decryptedData.contribution === 0n) {
+          throw new Error('Unable to decrypt contribution or contribution is 0');
+        }
+      } else if (status.status === DecryptStatus.PROCESSING) {
+        setClaimingStep('Decryption already in progress, waiting...');
+
+        const decryptedData = await waitForDecryption(campaignId, user.wallet.address);
+
+        if (!decryptedData || decryptedData.contribution === 0n) {
+          throw new Error('Unable to decrypt contribution or contribution is 0');
+        }
+      }
+
+      // Step 3: Claim tokens
+      setClaimingStep('Claiming your tokens...');
+      await claimTokens(campaignId);
+
+      setActionSuccess('Tokens claimed successfully!');
+      setClaimingStep('');
+    } catch (err: any) {
+      console.error('Claim error:', err);
+
+      let errorMessage = err.message || 'Failed to claim tokens';
+
+      if (err.message?.includes('ContributionNotDecrypted')) {
+        errorMessage = 'Your contribution needs to be decrypted first. Please try again.';
+      } else if (err.message?.includes('AlreadyClaimed')) {
+        errorMessage = 'You have already claimed your tokens.';
+      } else if (err.message?.includes('NoTokensToClaim')) {
+        errorMessage = 'No tokens available to claim (campaign may have failed).';
+      }
+
+      setError(errorMessage);
+      setClaimingStep('');
+    } finally {
+      setIsClaimingProcess(false);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
+    }
+  };
+
+  const waitForDecryption = async (
+    campaignId: number,
+    userAddress: string
+  ): Promise<{ contribution: bigint } | null> => {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 40; // 40 * 3 seconds = 2 minutes max
+
+      const interval = setInterval(async () => {
+        attempts++;
+
+        try {
+          const status = await getContributionStatus(campaignId, userAddress);
+
+          if (status.status === DecryptStatus.DECRYPTED && status.contribution > 0n) {
+            clearInterval(interval);
+            setPollingInterval(null);
+            resolve({ contribution: status.contribution });
+          } else if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setPollingInterval(null);
+            reject(new Error('Decryption timeout - please try again'));
+          }
+        } catch (err) {
+          console.error('Error checking decryption status:', err);
+          if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setPollingInterval(null);
+            reject(err);
+          }
+        }
+      }, 3000); // Poll every 3 seconds
+
+      setPollingInterval(interval);
+    });
   };
 
   if (loadingCampaign) {
@@ -302,13 +414,73 @@ export default function CampaignDetail() {
                 </p>
 
                 {campaign.finalized && authenticated && campaign.tokenAddress !== '0x0000000000000000000000000000000000000000' && (
-                  <button
-                    onClick={handleClaim}
-                    disabled={loading}
-                    className="w-full mt-4 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium disabled:opacity-50"
-                  >
-                    Claim Tokens
-                  </button>
+                  <div className="mt-4">
+                    {claimingStep && (
+                      <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className="animate-spin h-4 w-4 text-blue-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          <p className="text-sm text-blue-800">{claimingStep}</p>
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleClaim}
+                      disabled={loading || isClaimingProcess}
+                      className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isClaimingProcess ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg
+                            className="animate-spin h-5 w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Processing...
+                        </span>
+                      ) : (
+                        'Claim Tokens'
+                      )}
+                    </button>
+                    {!isClaimingProcess && (
+                      <p className="text-xs text-gray-500 mt-2 text-center">
+                        💡 Your contribution will be automatically decrypted if needed
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 {campaign.finalized && campaign.tokenAddress === '0x0000000000000000000000000000000000000000' && (
