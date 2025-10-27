@@ -37,8 +37,8 @@ export interface ShareVaultInterface extends Interface {
       | "getAvailableBalance"
       | "getAvailableBalanceStatus"
       | "getEncryptedBalance"
-      | "getLockedAmount"
-      | "getTotalLocked"
+      | "getEncryptedBalanceAndLocked"
+      | "getEncryptedTotalLocked"
       | "hasClaimed"
       | "hasClaimedTokens"
       | "lockFunds"
@@ -106,11 +106,11 @@ export interface ShareVaultInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "getLockedAmount",
-    values: [BigNumberish]
+    functionFragment: "getEncryptedBalanceAndLocked",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "getTotalLocked",
+    functionFragment: "getEncryptedTotalLocked",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -190,11 +190,11 @@ export interface ShareVaultInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getLockedAmount",
+    functionFragment: "getEncryptedBalanceAndLocked",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getTotalLocked",
+    functionFragment: "getEncryptedTotalLocked",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "hasClaimed", data: BytesLike): Result;
@@ -479,13 +479,13 @@ export interface ShareVault extends BaseContract {
 
   getEncryptedBalance: TypedContractMethod<[], [string], "view">;
 
-  getLockedAmount: TypedContractMethod<
-    [campaignId: BigNumberish],
-    [string],
+  getEncryptedBalanceAndLocked: TypedContractMethod<
+    [],
+    [[string, string] & { balance: string; locked: string }],
     "view"
   >;
 
-  getTotalLocked: TypedContractMethod<[], [string], "view">;
+  getEncryptedTotalLocked: TypedContractMethod<[], [string], "view">;
 
   hasClaimed: TypedContractMethod<
     [arg0: BigNumberish, arg1: AddressLike],
@@ -633,10 +633,14 @@ export interface ShareVault extends BaseContract {
     nameOrSignature: "getEncryptedBalance"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
-    nameOrSignature: "getLockedAmount"
-  ): TypedContractMethod<[campaignId: BigNumberish], [string], "view">;
+    nameOrSignature: "getEncryptedBalanceAndLocked"
+  ): TypedContractMethod<
+    [],
+    [[string, string] & { balance: string; locked: string }],
+    "view"
+  >;
   getFunction(
-    nameOrSignature: "getTotalLocked"
+    nameOrSignature: "getEncryptedTotalLocked"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "hasClaimed"

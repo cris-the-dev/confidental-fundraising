@@ -500,6 +500,32 @@ export function useCampaigns() {
     }
   };
 
+  const getEncryptedBalanceAndLocked = async (): Promise<{
+    encryptedBalance: string;
+    encryptedLocked: string;
+  }> => {
+    try {
+      const client = await getClient();
+      const userAddress = wallets[0]?.address;
+
+      if (!userAddress) throw new Error("No wallet connected");
+
+      const result = await client.readContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "getEncryptedBalanceAndLocked",
+      });
+
+      return {
+        encryptedBalance: result[0],
+        encryptedLocked: result[1]
+      };
+    } catch (error) {
+      console.error("Error fetching balance status:", error);
+      throw error;
+    }
+  };
+
 
   return {
     loading,
@@ -520,5 +546,6 @@ export function useCampaigns() {
     requestAvailableBalanceDecryption,
     getAvailableBalanceStatus,
     withdrawFromVault,
+    getEncryptedBalanceAndLocked,
   };
 }

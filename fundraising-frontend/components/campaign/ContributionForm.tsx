@@ -43,6 +43,7 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Optional vault balance state (for display only, not required for contribution)
   const [vaultStatus, setVaultStatus] = useState<DecryptStatus>(DecryptStatus.NONE);
@@ -225,20 +226,21 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
     // The contract will handle insufficient funds in encrypted form
 
     setError(null);
+    setIsSubmitting(true); // Show loading immediately
 
     try {
       console.log(`💰 Contributing ${amount} ETH to campaign ${campaignId}`);
-      
+
       await contribute(campaignId, amount);
 
       setSuccess(true);
       setAmount('');
-      
+
       // Clear balance cache since contribution changed the locked amount
       localStorage.removeItem(VAULT_BALANCE_CACHE_KEY);
       setVaultStatus(DecryptStatus.NONE);
       setAvailableBalance(null);
-      
+
       setTimeout(() => {
         setSuccess(false);
         onSuccess();
@@ -246,9 +248,9 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
 
     } catch (err: any) {
       console.error('Contribution error:', err);
-      
+
       let errorMessage = 'Failed to contribute. Please try again.';
-      
+
       if (err.message?.includes('User has no balance')) {
         errorMessage = 'You have no balance in the vault. Please deposit first.';
       } else if (err.message?.includes('insufficient')) {
@@ -258,8 +260,10 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
+    } finally {
+      setIsSubmitting(false); // Clear loading state
     }
   };
 
@@ -429,14 +433,15 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
         <button
           type="submit"
           disabled={
-            loading || 
-            !authenticated || 
-            fhevmLoading || 
+            loading ||
+            isSubmitting ||
+            !authenticated ||
+            fhevmLoading ||
             !isInitialized
           }
           className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? (
+          {(loading || isSubmitting) ? (
             <span className="flex items-center justify-center">
               <svg
                 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
