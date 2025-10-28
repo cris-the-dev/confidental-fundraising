@@ -633,21 +633,6 @@ NEXT_PUBLIC_CHAIN_ID=11155111
 
 **Note**: `viaIR: true` is required for FHEVM contracts to compile correctly.
 
-### Gas Estimates
-
-Approximate gas costs on Sepolia testnet:
-
-| Operation | Gas Cost | USD Cost (est.) |
-|-----------|----------|-----------------|
-| Deploy ShareVault | ~3,500,000 | ~$5-10 |
-| Deploy ConfidentialFundraising | ~4,500,000 | ~$7-15 |
-| Create Campaign | ~250,000 | ~$0.50-1 |
-| Deposit to Vault | ~150,000 | ~$0.30-0.60 |
-| Contribute | ~300,000 | ~$0.60-1.20 |
-| Finalize Campaign (success) | ~800,000 | ~$1.50-3 |
-| Claim Tokens | ~200,000 | ~$0.40-0.80 |
-| Withdraw | ~120,000 | ~$0.25-0.50 |
-
 ### Security Features
 
 - **Access Control**: Owner-only functions protected by modifiers
@@ -658,41 +643,6 @@ Approximate gas costs on Sepolia testnet:
 - **Locked Funds Isolation**: Per-campaign fund locks prevent double-spending
 - **Cache Expiration**: 10-minute timeout on decrypted values
 - **Max Supply Enforcement**: Token minting capped at 1 billion
-
----
-
-## 🎨 Mermaid Diagram Customization
-
-All diagrams in this README use a hand-drawn style theme. To customize the appearance:
-
-### Change Theme Colors
-
-Edit the `themeVariables` in the mermaid initialization:
-
-```javascript
-%%{init: {'theme':'base', 'themeVariables': {
-  'primaryColor':'#your-color',
-  'fontFamily':'Comic Sans MS, cursive, sans-serif',
-  'fontSize':'14px'
-}}}%%
-```
-
-### Use Different Fonts
-
-Replace `'fontFamily':'Comic Sans MS, cursive, sans-serif'` with:
-- `'fontFamily':'Patrick Hand, cursive'` - More hand-drawn
-- `'fontFamily':'Architects Daughter, cursive'` - Architect sketch style
-- `'fontFamily':'Indie Flower, cursive'` - Casual handwriting
-
-### Render in Tools
-
-These diagrams render beautifully in:
-- GitHub README
-- GitLab
-- VS Code with Mermaid extensions
-- Notion
-- Obsidian
-- Any Markdown viewer with Mermaid support
 
 ---
 
@@ -736,4 +686,14 @@ This platform uses **FHEVM (Fully Homomorphic Encryption)** to ensure:
 
 ---
 
-Built with ❤️ using Zama's FHEVM technology
+## 👨‍💻 Author
+
+**cristhedev**
+
+- 🐙 GitHub: [@cris-the-dev](https://github.com/cris-the-dev)
+- 📧 Email: tiennln.work@gmail.com
+- 🔗 Repository: [confidental-fundraising](https://github.com/cris-the-dev/confidental-fundraising)
+
+---
+
+Built with ❤️ by [cristhedev](https://github.com/cris-the-dev) using Zama's FHEVM technology

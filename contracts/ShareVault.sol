@@ -13,6 +13,7 @@ import "./interface/impl/DecryptionCallback.sol";
 
 /**
  * @title ShareVault
+ * @author cristhedev (https://github.com/cris-the-dev)
  * @notice Secure vault for managing encrypted user balances and campaign fund locks
  * @dev This contract acts as a decentralized escrow system for the ConfidentialFundraising platform.
  * It manages encrypted ETH balances, handles fund locking for active campaigns, and enables
@@ -30,7 +31,7 @@ import "./interface/impl/DecryptionCallback.sol";
  * - Users must decrypt their available balance before withdrawal
  * - All encrypted operations use FHEVM for on-chain privacy
  *
- * @custom:security-contact security@example.com
+ * @custom:security-contact tiennln.work@gmail.com
  */
 contract ShareVault is
     SepoliaConfig,

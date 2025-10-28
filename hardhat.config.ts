@@ -1,3 +1,12 @@
+/**
+ * Confidential Fundraising - Hardhat Configuration
+ *
+ * @author cristhedev
+ * @email tiennln.work@gmail.com
+ * @github https://github.com/cris-the-dev
+ * @repository https://github.com/cris-the-dev/confidental-fundraising
+ */
+
 import { HardhatUserConfig, vars } from "hardhat/config.js";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-verify";

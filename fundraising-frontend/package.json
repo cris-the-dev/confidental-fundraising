@@ -2,6 +2,20 @@
   "name": "fundraising-frontend",
   "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "cristhedev",
+    "email": "tiennln.work@gmail.com",
+    "url": "https://github.com/cris-the-dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cris-the-dev/confidental-fundraising.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cris-the-dev/confidental-fundraising/issues"
+  },
+  "homepage": "https://github.com/cris-the-dev/confidental-fundraising#readme",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

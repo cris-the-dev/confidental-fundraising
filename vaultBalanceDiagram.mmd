@@ -1,0 +1,27 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#e6ffe6','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
+
+sequenceDiagram
+    participant U as 👤 Contributor
+    participant F as 🎨 Frontend
+    participant SDK as 🔐 FHEVM SDK
+    participant CF as 📝 ConfidentialFundraising
+    participant CT as 🪙 CampaignToken
+
+    U->>F: Click "Claim Tokens"
+
+    F->>CF: getEncryptedContribution(campaignId)
+    CF-->>F: encryptedContribution
+    F->>SDK: Decrypt contribution amount
+    SDK-->>F: decryptedContribution
+
+    F->>CF: claimTokens(campaignId)
+    CF->>CF: Verify campaign successful
+    CF->>CF: Calculate tokens:<br/>userTokens = (contribution / target) * MAX_SUPPLY
+    CF->>CT: mint(contributor, userTokens)
+    CT->>CT: Mint tokens to contributor
+    CT-->>CF: ✅ Tokens minted
+    CF->>CF: Mark user as claimed
+    CF-->>F: ✅ Tokens claimed
+    F-->>U: "🎊 Received X tokens!"
+
+    Note over CT: Max supply: 1 billion tokens<br/>per campaign

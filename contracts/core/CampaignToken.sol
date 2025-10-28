@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title CampaignToken
+ * @author cristhedev (https://github.com/cris-the-dev)
  * @notice ERC20 token distributed to contributors of successful fundraising campaigns
  * @dev This token is deployed automatically when a campaign reaches its funding target.
  * Contributors receive tokens proportional to their contribution relative to the campaign target.
@@ -21,7 +22,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * - Mintable only by the campaign contract owner
  * - Immutable campaign ID reference
  *
- * @custom:security-contact security@example.com
+ * @custom:security-contact tiennln.work@gmail.com
  */
 contract CampaignToken is ERC20, Ownable {
     uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10**18; // 1 billion tokens
