@@ -353,7 +353,12 @@ contract ShareVault is
         // Grant permissions
         FHE.allowThis(lockedAmounts[user][campaignId]);
         FHE.allow(lockedAmounts[user][campaignId], campaignContract);
+        FHE.allow(lockedAmounts[user][campaignId], user);
+
+
         FHE.allowThis(totalLocked[user]);
+        FHE.allow(totalLocked[user], campaignContract);
+        FHE.allow(totalLocked[user], user);
 
         // Invalidate cached available balance since locked amount changed
         delete decryptedAvailableBalance[user];
