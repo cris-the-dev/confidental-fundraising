@@ -77,7 +77,7 @@ export default function CampaignList() {
           No Campaigns Yet
         </h3>
         <p className="text-gray-600 mb-6">
-          Be the first to create a private fundraising campaign!
+          Be the first to create a confidential fundraising campaign!
         </p>
       </div>
     );

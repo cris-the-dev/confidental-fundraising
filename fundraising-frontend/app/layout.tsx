@@ -10,7 +10,7 @@ import PrivyProvider from '../contexts/PriviProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Private Fundraising - FHEVM',
+  title: 'Confidential Fundraising - FHEVM',
   description: 'Confidential fundraising platform powered by FHEVM and Zama',
   keywords: ['FHEVM', 'Privacy', 'Fundraising', 'Blockchain', 'Encryption'],
   icons: {

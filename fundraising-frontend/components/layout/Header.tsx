@@ -26,7 +26,7 @@ export default function Header() {
               />
             </div>
             <span className="text-xl font-bold text-gray-900">
-              Private Fundraising
+              Confidential Fundraising
             </span>
           </Link>
 

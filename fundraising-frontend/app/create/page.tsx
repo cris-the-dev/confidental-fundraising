@@ -70,7 +70,7 @@ export default function CreateCampaign() {
           Create Campaign
         </h1>
         <p className="text-gray-600">
-          Launch a private fundraising campaign with encrypted contributions
+          Launch a confidential fundraising campaign with encrypted contributions
         </p>
       </div>
 
