@@ -19,7 +19,7 @@ export default function Footer() {
           </p>
           <div className="mt-4 flex justify-center space-x-6 text-xs text-gray-500">
             <a
-              href="https://docs.zama.ai/fhevm"
+              href="https://github.com/cris-the-dev/confidental-fundraising/blob/main/README.md"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-purple-600 transition"
@@ -28,7 +28,7 @@ export default function Footer() {
             </a>
             <span>•</span>
             <a
-              href="https://github.com/zama-ai/fhevmjs"
+              href="https://github.com/cris-the-dev/confidental-fundraising"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-purple-600 transition"
@@ -36,7 +36,18 @@ export default function Footer() {
               GitHub
             </a>
             <span>•</span>
-            <span>Built with ❤️ using FHEVM</span>
+            <span>
+              Built with ❤️ by{' '}
+              <a
+                href="https://x.com/cris_thedev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-purple-600 transition"
+              >
+                @cris_thedev
+              </a>
+              {' '}using FHEVM
+            </span>
           </div>
         </div>
       </div>
