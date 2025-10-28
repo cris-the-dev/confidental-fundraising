@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant U as 👤 Campaign Owner
+    participant F as 🎨 Frontend
+    participant CF as 📝 ConfidentialFundraising
+
+    U->>F: Fill campaign details<br/>(title, description, target, duration)
+    F->>F: Validate inputs
+    F->>CF: createCampaign(details)
+    CF->>CF: Generate campaign ID
+    CF->>CF: Initialize encrypted totalRaised = 0
+    CF->>CF: Set campaign state
+    CF->>CF: Grant FHE permissions
+    CF-->>F: ✅ Campaign created
+    F-->>U: Show campaign page
+
+    Note over CF: Campaign stored with<br/>encrypted state

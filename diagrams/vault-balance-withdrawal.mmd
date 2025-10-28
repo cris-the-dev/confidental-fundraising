@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant U as 👤 User
+    participant F as 🎨 Frontend
+    participant SDK as 🔐 FHEVM SDK
+    participant SV as 💰 ShareVault
+
+    rect rgb(240, 248, 255)
+        Note over U,SV: Check Balance
+        U->>F: View vault balance
+        F->>SV: getEncryptedBalance()
+        SV-->>F: encryptedBalance
+        F->>SV: getEncryptedTotalLocked()
+        SV-->>F: encryptedLocked
+
+        par Decrypt Balance
+            F->>SDK: Decrypt balance
+            SDK-->>F: decryptedBalance
+        and Decrypt Locked
+            F->>SDK: Decrypt locked
+            SDK-->>F: decryptedLocked
+        end
+
+        F->>F: Calculate available:<br/>available = balance - locked
+        F-->>U: Show balance breakdown
+    end
+
+    rect rgb(240, 255, 240)
+        Note over U,SV: Withdraw Funds
+        U->>F: Enter withdrawal amount
+        F->>F: Verify amount <= available
+        F->>SV: withdraw(amount)
+        SV->>SV: Verify sufficient balance
+        SV->>SV: Update encrypted balance
+        SV->>U: Transfer ETH
+        SV-->>F: ✅ Withdrawal successful
+        F-->>U: "✅ Withdrawal complete"
+    end

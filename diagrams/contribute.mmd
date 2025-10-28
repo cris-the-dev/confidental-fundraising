@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant U as 👤 Contributor
+    participant F as 🎨 Frontend
+    participant SDK as 🔐 FHEVM SDK
+    participant SV as 💰 ShareVault
+    participant CF as 📝 ConfidentialFundraising
+
+    U->>F: Enter contribution amount
+
+    alt User has insufficient vault balance
+        F->>SV: deposit(ETH)
+        SV->>SV: Encrypt balance on-chain
+        SV->>SV: Grant FHE permissions
+        SV-->>F: ✅ Deposit successful
+    end
+
+    F->>SDK: Encrypt contribution amount
+    SDK-->>F: encryptedAmount + proof
+
+    F->>CF: contribute(campaignId, encryptedAmount)
+    CF->>CF: Verify campaign is active
+    CF->>SV: lockFunds(user, campaignId, encryptedAmount)
+    SV->>SV: Lock funds: locked[user][campaign] += amount
+    SV-->>CF: ✅ Funds locked
+    CF->>CF: Store encrypted contribution
+    CF->>CF: Update encrypted totalRaised
+    CF-->>F: ✅ Contribution successful
+    F-->>U: Show success message
+
+    Note over CF,SV: All amounts remain<br/>encrypted on-chain
