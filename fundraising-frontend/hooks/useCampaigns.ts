@@ -526,6 +526,46 @@ export function useCampaigns() {
     }
   };
 
+  const getEncryptedContribution = async (
+    campaignId: number,
+    userAddress: string
+  ): Promise<string> => {
+    try {
+      const client = await getClient();
+
+      const result = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "getEncryptedContribution",
+        args: [campaignId, userAddress as `0x${string}`],
+      });
+
+      return result as string;
+    } catch (error) {
+      console.error("Error fetching encrypted contribution:", error);
+      throw error;
+    }
+  };
+
+  const getEncryptedTotalRaised = async (
+    campaignId: number
+  ): Promise<string> => {
+    try {
+      const client = await getClient();
+
+      const result = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "getEncryptedTotalRaised",
+        args: [campaignId],
+      });
+
+      return result as string;
+    } catch (error) {
+      console.error("Error fetching encrypted total raised:", error);
+      throw error;
+    }
+  };
 
   return {
     loading,
@@ -547,5 +587,7 @@ export function useCampaigns() {
     getAvailableBalanceStatus,
     withdrawFromVault,
     getEncryptedBalanceAndLocked,
+    getEncryptedContribution,
+    getEncryptedTotalRaised,
   };
 }

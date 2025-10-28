@@ -5,7 +5,6 @@ import { formatEther } from 'viem';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useDecrypt } from '../../hooks/useDecrypt';
-import { BrowserProvider } from 'ethers';
 import { CONTRACT_ADDRESS } from '../../lib/contracts/config';
 
 interface Props {
@@ -19,7 +18,7 @@ export function ViewMyContribution({ campaignId, externalProcessing = false }: P
   const [error, setError] = useState('');
   const [isDecrypting, setIsDecrypting] = useState(false);
 
-  const { checkHasContribution } = useCampaigns();
+  const { checkHasContribution, getEncryptedContribution } = useCampaigns();
   const { authenticated } = usePrivy();
   const { wallets } = useWallets();
   const { decrypt } = useDecrypt();
@@ -46,26 +45,13 @@ export function ViewMyContribution({ campaignId, externalProcessing = false }: P
         return;
       }
 
-      // Get the provider from Privy
-      const provider = await wallet.getEthereumProvider();
-      const ethersProvider = new BrowserProvider(provider);
-
-      // Import the contract
-      const { Contract } = await import('ethers');
-      const { FUNDRAISING_ABI } = await import('../../lib/contracts/abi');
-
-      const contract = new Contract(CONTRACT_ADDRESS, FUNDRAISING_ABI, ethersProvider);
-
-      // Get encrypted contribution
-      const encryptedContribution = await contract.getEncryptedContribution(
-        campaignId,
-        wallet.address
-      );
+      // Get encrypted contribution from hook
+      const encryptedContribution = await getEncryptedContribution(campaignId, wallet.address);
 
       console.log('📦 Encrypted contribution:', encryptedContribution);
 
       // Check if contribution exists (handle is not 0)
-      if (!encryptedContribution || encryptedContribution === 0n) {
+      if (!encryptedContribution || BigInt(encryptedContribution) === 0n) {
         setError("No contribution found.");
         setIsDecrypting(false);
         return;

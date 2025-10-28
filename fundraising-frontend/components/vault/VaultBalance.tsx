@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { formatEther } from 'viem';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useDecrypt } from '../../hooks/useDecrypt';
-import { BrowserProvider } from 'ethers';
 import { VAULT_ADDRESS } from '../../lib/contracts/config';
 import { useCampaigns } from '../../hooks/useCampaigns';
 

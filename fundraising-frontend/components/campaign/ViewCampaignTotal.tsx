@@ -5,7 +5,6 @@ import { formatEther } from 'viem';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useDecrypt } from '../../hooks/useDecrypt';
-import { BrowserProvider } from 'ethers';
 import { CONTRACT_ADDRESS } from '../../lib/contracts/config';
 
 interface Props {
@@ -18,7 +17,7 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
   const [error, setError] = useState('');
   const [isDecrypting, setIsDecrypting] = useState(false);
 
-  const { loading } = useCampaigns();
+  const { loading, getEncryptedTotalRaised } = useCampaigns();
   const { authenticated } = usePrivy();
   const { wallets } = useWallets();
   const { decrypt } = useDecrypt();
@@ -38,25 +37,13 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
     setIsDecrypting(true);
 
     try {
-      const wallet = wallets[0];
-
-      // Get the provider from Privy
-      const provider = await wallet.getEthereumProvider();
-      const ethersProvider = new BrowserProvider(provider);
-
-      // Import the contract
-      const { Contract } = await import('ethers');
-      const { FUNDRAISING_ABI } = await import('../../lib/contracts/abi');
-
-      const contract = new Contract(CONTRACT_ADDRESS, FUNDRAISING_ABI, ethersProvider);
-
-      // Get encrypted total raised
-      const encryptedTotal = await contract.getEncryptedTotalRaised(campaignId);
+      // Get encrypted total raised from hook
+      const encryptedTotal = await getEncryptedTotalRaised(campaignId);
 
       console.log('📦 Encrypted total raised:', encryptedTotal);
 
       // Check if total exists
-      if (!encryptedTotal || encryptedTotal === 0n) {
+      if (!encryptedTotal || BigInt(encryptedTotal) === 0n) {
         setTotalRaised(0n);
         setIsDecrypting(false);
         return;

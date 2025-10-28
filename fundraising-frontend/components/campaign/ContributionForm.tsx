@@ -1,43 +1,29 @@
 // components/campaign/ContributionForm.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useState } from 'react';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useCampaigns } from '../../hooks/useCampaigns';
+import { useDecrypt } from '../../hooks/useDecrypt';
 import { useFhevm } from '../../contexts/FhevmContext';
 import { parseEther } from 'viem';
 import Link from 'next/link';
+import { VAULT_ADDRESS } from '../../lib/contracts/config';
 
 interface Props {
   campaignId: number;
   onSuccess: () => void;
 }
 
-enum DecryptStatus {
-  NONE = 0,
-  PROCESSING = 1,
-  DECRYPTED = 2,
-}
-
-// Cache key for localStorage
-const VAULT_BALANCE_CACHE_KEY = 'vault_balance_cache';
-
-interface BalanceCache {
-  status: DecryptStatus;
-  availableBalance: string;
-  cacheExpiry: string;
-  timestamp: number;
-  userAddress: string;
-}
-
 export default function ContributeForm({ campaignId, onSuccess }: Props) {
   const { user, authenticated, login } = usePrivy();
-  const { 
-    contribute, 
+  const { wallets } = useWallets();
+  const {
+    contribute,
     loading,
-    getAvailableBalanceStatus,
-    requestAvailableBalanceDecryption,
+    getEncryptedBalanceAndLocked,
   } = useCampaigns();
+  const { decrypt } = useDecrypt();
   const { instance: fhevm, isInitialized, isLoading: fhevmLoading } = useFhevm();
 
   const [amount, setAmount] = useState('');
@@ -46,124 +32,12 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Optional vault balance state (for display only, not required for contribution)
-  const [vaultStatus, setVaultStatus] = useState<DecryptStatus>(DecryptStatus.NONE);
   const [availableBalance, setAvailableBalance] = useState<bigint | null>(null);
-  const [cacheExpiry, setCacheExpiry] = useState<bigint>(0n);
   const [checkingBalance, setCheckingBalance] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
-  // Load cached balance on mount
-  useEffect(() => {
-    if (!authenticated || !user?.wallet?.address) return;
-
-    const cached = localStorage.getItem(VAULT_BALANCE_CACHE_KEY);
-    if (cached) {
-      try {
-        const cacheData: BalanceCache = JSON.parse(cached);
-        
-        // Only use cache if it's for the same user and less than 5 minutes old
-        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-        if (
-          cacheData.userAddress.toLowerCase() === user.wallet.address.toLowerCase() &&
-          Date.now() - cacheData.timestamp < CACHE_DURATION
-        ) {
-          setVaultStatus(cacheData.status);
-          setAvailableBalance(BigInt(cacheData.availableBalance));
-          setCacheExpiry(BigInt(cacheData.cacheExpiry));
-          setLastFetchTime(cacheData.timestamp);
-          console.log('✅ Loaded balance from cache');
-          return;
-        }
-      } catch (err) {
-        console.error('Error loading cache:', err);
-      }
-    }
-  }, [authenticated, user?.wallet?.address]);
-
-  // Save to cache whenever balance updates
-  useEffect(() => {
-    if (!authenticated || !user?.wallet?.address || availableBalance === null) return;
-
-    const cacheData: BalanceCache = {
-      status: vaultStatus,
-      availableBalance: availableBalance.toString(),
-      cacheExpiry: cacheExpiry.toString(),
-      timestamp: Date.now(),
-      userAddress: user.wallet.address,
-    };
-
-    localStorage.setItem(VAULT_BALANCE_CACHE_KEY, JSON.stringify(cacheData));
-  }, [vaultStatus, availableBalance, cacheExpiry, authenticated, user?.wallet?.address]);
-
-  // Fetch vault balance status (rate-limited) - OPTIONAL for display
-  const fetchVaultBalance = async () => {
-    if (!authenticated || !user?.wallet?.address) return;
-
-    // Rate limiting: Don't fetch more than once every 10 seconds
-    const MIN_FETCH_INTERVAL = 10000; // 10 seconds
-    const now = Date.now();
-    if (now - lastFetchTime < MIN_FETCH_INTERVAL) {
-      console.log('⏱️ Rate limited: Skipping fetch (too soon)');
-      return;
-    }
-
-    try {
-      setLastFetchTime(now);
-      const statusData = await getAvailableBalanceStatus();
-      setVaultStatus(statusData.status);
-      setAvailableBalance(statusData.availableAmount);
-      setCacheExpiry(statusData.cacheExpiry);
-
-      // Stop polling if decrypted
-      if (statusData.status === DecryptStatus.DECRYPTED && statusData.availableAmount >= 0n) {
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-          setPollingInterval(null);
-        }
-      }
-    } catch (err: any) {
-      console.error('Error fetching vault balance:', err);
-      
-      // If 429, show friendly message
-      if (err.message?.includes('429') || err.message?.includes('rate limit')) {
-        setError('Rate limit reached. Please wait a moment before checking balance again.');
-      }
-    }
-  };
-
-  // Manual balance check - OPTIONAL
+  // Instant balance check - OPTIONAL for display
   const handleCheckBalance = async () => {
-    setCheckingBalance(true);
-    setError(null);
-    await fetchVaultBalance();
-    setCheckingBalance(false);
-  };
-
-  // Setup polling ONLY when processing
-  useEffect(() => {
-    if (vaultStatus === DecryptStatus.PROCESSING) {
-      const interval = setInterval(fetchVaultBalance, 10000);
-      setPollingInterval(interval);
-
-      return () => {
-        clearInterval(interval);
-      };
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vaultStatus]);
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [pollingInterval]);
-
-  const handleRequestBalanceDecryption = async () => {
-    if (!authenticated) {
+    if (!authenticated || !wallets[0]?.address) {
       login();
       return;
     }
@@ -172,28 +46,35 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
     setError(null);
 
     try {
-      await requestAvailableBalanceDecryption();
-      setVaultStatus(DecryptStatus.PROCESSING);
+      // Get encrypted balance and locked amounts
+      const { encryptedBalance, encryptedLocked } = await getEncryptedBalanceAndLocked();
 
-      // Start polling
-      const interval = setInterval(fetchVaultBalance, 10000);
-      setPollingInterval(interval);
-    } catch (err: any) {
-      console.error('Balance decryption error:', err);
-      
-      if (err.message?.includes('429') || err.message?.includes('rate limit')) {
-        setError('Rate limit reached. Please wait a moment before trying again.');
-      } else {
-        setError('Failed to check vault balance. Please try again.');
+      console.log('📦 Encrypted balance:', encryptedBalance);
+      console.log('📦 Encrypted locked:', encryptedLocked);
+
+      // Decrypt balance
+      let balance = 0n;
+      if (encryptedBalance && BigInt(encryptedBalance) !== 0n) {
+        balance = await decrypt(encryptedBalance, VAULT_ADDRESS);
       }
+
+      // Decrypt locked
+      let locked = 0n;
+      if (encryptedLocked && BigInt(encryptedLocked) !== 0n) {
+        locked = await decrypt(encryptedLocked, VAULT_ADDRESS);
+      }
+
+      // Calculate available
+      const available = balance - locked;
+      setAvailableBalance(available);
+
+      console.log('✅ Available balance:', available);
+    } catch (err: any) {
+      console.error('Balance check error:', err);
+      setError('Failed to check vault balance. Please try again.');
     } finally {
       setCheckingBalance(false);
     }
-  };
-
-  const isCacheExpired = () => {
-    if (cacheExpiry === 0n) return false;
-    return cacheExpiry < BigInt(Math.floor(Date.now() / 1000));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -236,9 +117,7 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
       setSuccess(true);
       setAmount('');
 
-      // Clear balance cache since contribution changed the locked amount
-      localStorage.removeItem(VAULT_BALANCE_CACHE_KEY);
-      setVaultStatus(DecryptStatus.NONE);
+      // Clear balance since contribution changed the locked amount
       setAvailableBalance(null);
 
       setTimeout(() => {
@@ -279,7 +158,7 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
           <span className="text-sm font-medium text-gray-700">
             💰 Your Vault Balance (Optional)
           </span>
-          {vaultStatus === DecryptStatus.DECRYPTED && !isCacheExpired() && (
+          {availableBalance !== null && (
             <button
               onClick={handleCheckBalance}
               disabled={checkingBalance}
@@ -290,88 +169,65 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
           )}
         </div>
 
-        {vaultStatus === DecryptStatus.NONE && (
+        {availableBalance === null ? (
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
               <span className="text-sm text-gray-600">Balance Not Checked</span>
             </div>
             <button
-              onClick={handleRequestBalanceDecryption}
+              onClick={handleCheckBalance}
               disabled={checkingBalance || !authenticated}
               className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition font-medium"
             >
-              {checkingBalance ? 'Checking...' : '🔐 Check Vault Balance'}
+              {checkingBalance ? (
+                <span className="flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-3 w-3"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Checking...
+                </span>
+              ) : (
+                '🔐 Check Vault Balance'
+              )}
             </button>
             <p className="text-xs text-gray-500 mt-2">
               Optional: Check your balance to see available funds
             </p>
           </div>
-        )}
-
-        {vaultStatus === DecryptStatus.PROCESSING && (
-          <div className="flex items-center gap-3">
-            <svg
-              className="animate-spin h-4 w-4 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-blue-900">Checking Balance...</span>
-              </div>
-              <p className="text-xs text-blue-700">Please wait 10-30 seconds</p>
-            </div>
-          </div>
-        )}
-
-        {vaultStatus === DecryptStatus.DECRYPTED && availableBalance !== null && (
+        ) : (
           <div>
-            {isCacheExpired() ? (
-              <div>
-                <p className="text-sm text-orange-600 mb-2">⚠️ Balance cache expired</p>
-                <button
-                  onClick={handleRequestBalanceDecryption}
-                  disabled={checkingBalance}
-                  className="text-sm bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 disabled:opacity-50 transition font-medium"
-                >
-                  Refresh Balance
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-green-700">Available</span>
-                </div>
-                <p className="text-2xl font-bold text-blue-900">
-                  {(Number(availableBalance) / 1e18).toFixed(4)} <span className="text-base font-medium">ETH</span>
-                </p>
-                {availableBalance === 0n && (
-                  <Link
-                    href="/vault"
-                    className="inline-block mt-2 text-xs text-blue-600 hover:text-blue-700 underline"
-                  >
-                    → Deposit to Vault
-                  </Link>
-                )}
-              </div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium text-green-700">Available</span>
+            </div>
+            <p className="text-2xl font-bold text-blue-900">
+              {(Number(availableBalance) / 1e18).toFixed(4)} <span className="text-base font-medium">ETH</span>
+            </p>
+            {availableBalance === 0n && (
+              <Link
+                href="/vault"
+                className="inline-block mt-2 text-xs text-blue-600 hover:text-blue-700 underline"
+              >
+                → Deposit to Vault
+              </Link>
             )}
           </div>
         )}
@@ -394,7 +250,7 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             disabled={loading}
           />
-          {availableBalance !== null && vaultStatus === DecryptStatus.DECRYPTED && !isCacheExpired() && (
+          {availableBalance !== null && (
             <p className="text-xs text-gray-500 mt-1">
               Available: {(Number(availableBalance) / 1e18).toFixed(4)} ETH
             </p>
@@ -483,7 +339,7 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
           ✅ No balance check required - the contract validates funds in encrypted form
         </p>
         <p className="text-xs text-gray-500">
-          💡 Balance check is optional for display purposes only
+          💡 Balance check is optional (instant decryption for display purposes only)
         </p>
       </div>
     </div>
