@@ -138,6 +138,7 @@ classDiagram
 ### 1. Campaign Creation Flow
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffcc00','primaryTextColor':'#000','primaryBorderColor':'#000','lineColor':'#000','secondaryColor':'#ffeb99','tertiaryColor':'#fff','noteBkgColor':'#ffeb99','noteTextColor':'#000','noteBorderColor':'#000','actorBkg':'#ffcc00','actorBorder':'#000','actorTextColor':'#000','actorLineColor':'#000','signalColor':'#000','signalTextColor':'#000','labelBoxBkgColor':'#ffeb99','labelBoxBorderColor':'#000','labelTextColor':'#000','loopTextColor':'#000','activationBorderColor':'#000','activationBkgColor':'#ffffcc','sequenceNumberColor':'#000'}}}%%
 sequenceDiagram
     participant U as 👤 Campaign Owner
     participant F as 🎨 Frontend
