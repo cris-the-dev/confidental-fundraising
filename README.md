@@ -63,7 +63,7 @@ The platform consists of three main layers: **Smart Contracts** (on-chain logic)
 
 ### 6. Encryption & Decryption Flow (Technical)
 
-<img src="diagrams/png/encryption-decryption.png" alt="Encryption & Decryption Flow" width="80%">
+<img src="diagrams/svg/encryption-decryption.svg" alt="Encryption & Decryption Flow" width="80%">
 
 ---
 
