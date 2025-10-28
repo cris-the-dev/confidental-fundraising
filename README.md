@@ -137,27 +137,208 @@ classDiagram
 
 ### 1. Campaign Creation Flow
 
-<img src="diagrams/svg/campaign-creation.svg" alt="Campaign Creation Flow" width="100%">
+```mermaid
+%%{init: {'theme':'neutral', 'themeVariables': {'primaryColor':'#ffcc00','primaryTextColor':'#000','primaryBorderColor':'#000','lineColor':'#000','secondaryColor':'#ffeb99','tertiaryColor':'#fff','noteBkgColor':'#ffeb99','noteTextColor':'#000','noteBorderColor':'#000','actorBkg':'#ffcc00','actorBorder':'#000','actorTextColor':'#000','actorLineColor':'#000','signalColor':'#000','signalTextColor':'#000','labelBoxBkgColor':'#ffeb99','labelBoxBorderColor':'#000','labelTextColor':'#000','loopTextColor':'#000','activationBorderColor':'#000','activationBkgColor':'#ffffcc','sequenceNumberColor':'#000'}}}%%
+sequenceDiagram
+    participant U as 👤 Campaign Owner
+    participant F as 🎨 Frontend
+    participant CF as 📝 ConfidentialFundraising
+
+    U->>F: Fill campaign details<br/>(title, description, target, duration)
+    F->>F: Validate inputs
+    F->>CF: createCampaign(details)
+    CF->>CF: Generate campaign ID
+    CF->>CF: Initialize encrypted totalRaised = 0
+    CF->>CF: Set campaign state
+    CF->>CF: Grant FHE permissions
+    CF-->>F: ✅ Campaign created
+    F-->>U: Show campaign page
+
+    Note over CF: Campaign stored with<br/>encrypted state
+```
 
 ### 2. Contribution Flow
 
-<img src="diagrams/svg/contribute.svg" alt="Contribution Flow" width="100%">
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#66ccff','primaryTextColor':'#000','primaryBorderColor':'#000','lineColor':'#000','secondaryColor':'#b3e5ff','tertiaryColor':'#fff','noteBkgColor':'#b3e5ff','noteTextColor':'#000','noteBorderColor':'#000','actorBkg':'#66ccff','actorBorder':'#000','actorTextColor':'#000','actorLineColor':'#000','signalColor':'#000','signalTextColor':'#000','labelBoxBkgColor':'#b3e5ff','labelBoxBorderColor':'#000','labelTextColor':'#000','loopTextColor':'#000','activationBorderColor':'#000','activationBkgColor':'#e6f7ff','sequenceNumberColor':'#000'}}}%%
+sequenceDiagram
+    participant U as 👤 Contributor
+    participant F as 🎨 Frontend
+    participant SDK as 🔐 FHEVM SDK
+    participant SV as 💰 ShareVault
+    participant CF as 📝 ConfidentialFundraising
+
+    U->>F: Enter contribution amount
+
+    alt User has insufficient vault balance
+        F->>SV: deposit(ETH)
+        SV->>SV: Encrypt balance on-chain
+        SV->>SV: Grant FHE permissions
+        SV-->>F: ✅ Deposit successful
+    end
+
+    F->>SDK: Encrypt contribution amount
+    SDK-->>F: encryptedAmount + proof
+
+    F->>CF: contribute(campaignId, encryptedAmount)
+    CF->>CF: Verify campaign is active
+    CF->>SV: lockFunds(user, campaignId, encryptedAmount)
+    SV->>SV: Lock funds: locked[user][campaign] += amount
+    SV-->>CF: ✅ Funds locked
+    CF->>CF: Store encrypted contribution
+    CF->>CF: Update encrypted totalRaised
+    CF-->>F: ✅ Contribution successful
+    F-->>U: Show success message
+
+    Note over CF,SV: All amounts remain<br/>encrypted on-chain
+```
 
 ### 3. Campaign Finalization Flow
 
-<img src="diagrams/svg/campaign-finalization.svg" alt="Campaign Finalization Flow" width="100%">
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#cc99ff','primaryTextColor':'#000','primaryBorderColor':'#000','lineColor':'#000','secondaryColor':'#e6ccff','tertiaryColor':'#fff','noteBkgColor':'#e6ccff','noteTextColor':'#000','noteBorderColor':'#000','actorBkg':'#cc99ff','actorBorder':'#000','actorTextColor':'#000','actorLineColor':'#000','signalColor':'#000','signalTextColor':'#000','labelBoxBkgColor':'#e6ccff','labelBoxBorderColor':'#000','labelTextColor':'#000','loopTextColor':'#000','activationBorderColor':'#000','activationBkgColor':'#f5ebff','sequenceNumberColor':'#000'}}}%%
+sequenceDiagram
+    participant U as 👤 Campaign Owner
+    participant F as 🎨 Frontend
+    participant SDK as 🔐 FHEVM SDK
+    participant CF as 📝 ConfidentialFundraising
+    participant SV as 💰 ShareVault
+    participant CT as 🪙 CampaignToken
+
+    U->>F: Click "Finalize Campaign"
+    F->>F: Check deadline passed
+
+    F->>CF: getEncryptedTotalRaised(campaignId)
+    CF-->>F: encryptedTotal
+    F->>SDK: Decrypt total amount
+    SDK-->>F: decryptedTotal
+
+    F->>F: Display total to owner
+    U->>F: Confirm finalization<br/>(provide token name & symbol)
+
+    F->>CF: finalizeCampaign(campaignId, tokenName, tokenSymbol)
+
+    alt Target Reached ✅
+        CF->>CT: Deploy new CampaignToken
+        CT-->>CF: Token contract address
+        CF->>SV: transferLockedFunds(owner, campaignId)
+        SV->>SV: Calculate total locked for campaign
+        SV->>SV: Unlock all contributor funds
+        SV->>SV: Transfer ETH to owner
+        SV-->>CF: ✅ Funds transferred
+        CF->>CF: Mark campaign successful
+        CF-->>F: ✅ Campaign finalized successfully
+        F-->>U: "🎉 Campaign successful!<br/>Contributors can claim tokens"
+    else Target Not Reached ❌
+        CF->>SV: unlockFunds(campaignId)
+        SV->>SV: Unlock all contributor funds
+        SV-->>CF: ✅ Funds unlocked
+        CF->>CF: Mark campaign failed
+        CF-->>F: ❌ Campaign failed
+        F-->>U: "Campaign failed.<br/>Refunds available to contributors"
+    end
+```
 
 ### 4. Token Claim Flow
 
-<img src="diagrams/svg/token-claim.svg" alt="Token Claim Flow" width="100%">
+```mermaid
+sequenceDiagram
+    participant U as 👤 Contributor
+    participant F as 🎨 Frontend
+    participant SDK as 🔐 FHEVM SDK
+    participant CF as 📝 ConfidentialFundraising
+    participant CT as 🪙 CampaignToken
+
+    U->>F: Click "Claim Tokens"
+
+    F->>CF: getEncryptedContribution(campaignId)
+    CF-->>F: encryptedContribution
+    F->>SDK: Decrypt contribution amount
+    SDK-->>F: decryptedContribution
+
+    F->>CF: claimTokens(campaignId)
+    CF->>CF: Verify campaign successful
+    CF->>CF: Calculate tokens:<br/>userTokens = (contribution / target) * MAX_SUPPLY
+    CF->>CT: mint(contributor, userTokens)
+    CT->>CT: Mint tokens to contributor
+    CT-->>CF: ✅ Tokens minted
+    CF->>CF: Mark user as claimed
+    CF-->>F: ✅ Tokens claimed
+    F-->>U: "🎊 Received X tokens!"
+
+    Note over CT: Max supply: 1 billion tokens<br/>per campaign
+```
 
 ### 5. Vault Balance & Withdrawal Flow
 
-<img src="diagrams/svg/vault-balance-withdrawal.svg" alt="Vault Balance & Withdrawal Flow" width="100%">
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant F as 🎨 Frontend
+    participant SDK as 🔐 FHEVM SDK
+    participant SV as 💰 ShareVault
+
+    rect rgb(240, 248, 255)
+        Note over U,SV: Check Balance
+        U->>F: View vault balance
+        F->>SV: getEncryptedBalance()
+        SV-->>F: encryptedBalance
+        F->>SV: getEncryptedTotalLocked()
+        SV-->>F: encryptedLocked
+
+        par Decrypt Balance
+            F->>SDK: Decrypt balance
+            SDK-->>F: decryptedBalance
+        and Decrypt Locked
+            F->>SDK: Decrypt locked
+            SDK-->>F: decryptedLocked
+        end
+
+        F->>F: Calculate available:<br/>available = balance - locked
+        F-->>U: Show balance breakdown
+    end
+
+    rect rgb(240, 255, 240)
+        Note over U,SV: Withdraw Funds
+        U->>F: Enter withdrawal amount
+        F->>F: Verify amount <= available
+        F->>SV: withdraw(amount)
+        SV->>SV: Verify sufficient balance
+        SV->>SV: Update encrypted balance
+        SV->>U: Transfer ETH
+        SV-->>F: ✅ Withdrawal successful
+        F-->>U: "✅ Withdrawal complete"
+    end
+```
 
 ### 6. Encryption & Decryption Flow (Technical)
 
-<img src="diagrams/svg/encryption-decryption.svg" alt="Encryption & Decryption Flow" width="100%">
+```mermaid
+graph LR
+    subgraph "📤 Encryption Process"
+        A[Plain Value<br/>e.g., 100 ETH] --> B[FHEVM SDK<br/>Encrypt]
+        B --> C[Encrypted Value<br/>euint64]
+        B --> D[Proof<br/>ZK Proof]
+        C --> E[Smart Contract]
+        D --> E
+    end
+
+    subgraph "📥 Decryption Process"
+        F[Smart Contract] --> G[getEncrypted...<br/>Read Function]
+        G --> H[Encrypted Value]
+        H --> I[FHEVM SDK<br/>Client-Side Decrypt]
+        I --> J[Verify Permissions]
+        J --> K[Plain Value<br/>100 ETH]
+    end
+
+    E -.Stored On-Chain.-> F
+
+    style A fill:#ffcccc,stroke:#333,stroke-width:2px
+    style K fill:#ccffcc,stroke:#333,stroke-width:2px
+    style E fill:#cce5ff,stroke:#333,stroke-width:2px
+    style F fill:#cce5ff,stroke:#333,stroke-width:2px
+    style I fill:#ffd700,stroke:#333,stroke-width:3px
+```
 
 ---
 
