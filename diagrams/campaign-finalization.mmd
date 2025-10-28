@@ -1,0 +1,46 @@
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+
+sequenceDiagram
+    participant U as 👤 Campaign Owner
+    participant F as 🎨 Frontend
+    participant SDK as 🔐 FHEVM SDK
+    participant CF as 📝 ConfidentialFundraising
+    participant SV as 💰 ShareVault
+    participant CT as 🪙 CampaignToken
+
+    U->>F: Click "Finalize Campaign"
+    F->>F: Check deadline passed
+
+    F->>CF: getEncryptedTotalRaised(campaignId)
+    CF-->>F: encryptedTotal
+    F->>SDK: Decrypt total amount
+    SDK-->>F: decryptedTotal
+
+    F->>F: Display total to owner
+    U->>F: Confirm finalization<br/>(provide token name & symbol)
+
+    F->>CF: finalizeCampaign(campaignId, tokenName, tokenSymbol)
+
+    alt Target Reached ✅
+        CF->>CT: Deploy new CampaignToken
+        CT-->>CF: Token contract address
+        CF->>SV: transferLockedFunds(owner, campaignId)
+        SV->>SV: Calculate total locked for campaign
+        SV->>SV: Unlock all contributor funds
+        SV->>SV: Transfer ETH to owner
+        SV-->>CF: ✅ Funds transferred
+        CF->>CF: Mark campaign successful
+        CF-->>F: ✅ Campaign finalized successfully
+        F-->>U: "🎉 Campaign successful!<br/>Contributors can claim tokens"
+    else Target Not Reached ❌
+        CF->>SV: unlockFunds(campaignId)
+        SV->>SV: Unlock all contributor funds
+        SV-->>CF: ✅ Funds unlocked
+        CF->>CF: Mark campaign failed
+        CF-->>F: ❌ Campaign failed
+        F-->>U: "Campaign failed.<br/>Refunds available to contributors"
+    end

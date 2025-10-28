@@ -25,8 +25,6 @@ The Confidential Fundraising Platform revolutionizes crowdfunding by combining b
 The platform consists of three main layers: **Smart Contracts** (on-chain logic), **Frontend Application** (user interface), and **FHEVM Layer** (encryption/decryption).
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f0f0f0','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','secondaryColor':'#e8e8e8','tertiaryColor':'#fff','fontFamily':'Comic Sans MS, cursive, sans-serif','fontSize':'14px'},'flowchart':{'curve':'basis','padding':20}}}%%
-
 graph TB
     subgraph "👤 User Layer"
         User[Web Browser<br/>+ Wallet]
@@ -76,8 +74,6 @@ graph TB
 ### Smart Contract Architecture
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f0f0f0','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'}}}%%
-
 classDiagram
     class ConfidentialFundraising {
         +createCampaign()
@@ -141,217 +137,27 @@ classDiagram
 
 ### 1. Campaign Creation Flow
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#fff4e6','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
-sequenceDiagram
-    participant U as 👤 Campaign Owner
-    participant F as 🎨 Frontend
-    participant CF as 📝 ConfidentialFundraising
-
-    U->>F: Fill campaign details<br/>(title, description, target, duration)
-    F->>F: Validate inputs
-    F->>CF: createCampaign(details)
-    CF->>CF: Generate campaign ID
-    CF->>CF: Initialize encrypted totalRaised = 0
-    CF->>CF: Set campaign state
-    CF->>CF: Grant FHE permissions
-    CF-->>F: ✅ Campaign created
-    F-->>U: Show campaign page
-
-    Note over CF: Campaign stored with<br/>encrypted state
-```
+<img src="diagrams/svg/campaign-creation.svg" alt="Campaign Creation Flow" width="100%">
 
 ### 2. Contribution Flow
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#e8f4f8','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
-sequenceDiagram
-    participant U as 👤 Contributor
-    participant F as 🎨 Frontend
-    participant SDK as 🔐 FHEVM SDK
-    participant SV as 💰 ShareVault
-    participant CF as 📝 ConfidentialFundraising
-
-    U->>F: Enter contribution amount
-
-    alt User has insufficient vault balance
-        F->>SV: deposit(ETH)
-        SV->>SV: Encrypt balance on-chain
-        SV->>SV: Grant FHE permissions
-        SV-->>F: ✅ Deposit successful
-    end
-
-    F->>SDK: Encrypt contribution amount
-    SDK-->>F: encryptedAmount + proof
-
-    F->>CF: contribute(campaignId, encryptedAmount)
-    CF->>CF: Verify campaign is active
-    CF->>SV: lockFunds(user, campaignId, encryptedAmount)
-    SV->>SV: Lock funds: locked[user][campaign] += amount
-    SV-->>CF: ✅ Funds locked
-    CF->>CF: Store encrypted contribution
-    CF->>CF: Update encrypted totalRaised
-    CF-->>F: ✅ Contribution successful
-    F-->>U: Show success message
-
-    Note over CF,SV: All amounts remain<br/>encrypted on-chain
-```
+<img src="diagrams/svg/contribute.svg" alt="Contribution Flow" width="100%">
 
 ### 3. Campaign Finalization Flow
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f0e6ff','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
-sequenceDiagram
-    participant U as 👤 Campaign Owner
-    participant F as 🎨 Frontend
-    participant SDK as 🔐 FHEVM SDK
-    participant CF as 📝 ConfidentialFundraising
-    participant SV as 💰 ShareVault
-    participant CT as 🪙 CampaignToken
-
-    U->>F: Click "Finalize Campaign"
-    F->>F: Check deadline passed
-
-    F->>CF: getEncryptedTotalRaised(campaignId)
-    CF-->>F: encryptedTotal
-    F->>SDK: Decrypt total amount
-    SDK-->>F: decryptedTotal
-
-    F->>F: Display total to owner
-    U->>F: Confirm finalization<br/>(provide token name & symbol)
-
-    F->>CF: finalizeCampaign(campaignId, tokenName, tokenSymbol)
-
-    alt Target Reached ✅
-        CF->>CT: Deploy new CampaignToken
-        CT-->>CF: Token contract address
-        CF->>SV: transferLockedFunds(owner, campaignId)
-        SV->>SV: Calculate total locked for campaign
-        SV->>SV: Unlock all contributor funds
-        SV->>SV: Transfer ETH to owner
-        SV-->>CF: ✅ Funds transferred
-        CF->>CF: Mark campaign successful
-        CF-->>F: ✅ Campaign finalized successfully
-        F-->>U: "🎉 Campaign successful!<br/>Contributors can claim tokens"
-    else Target Not Reached ❌
-        CF->>SV: unlockFunds(campaignId)
-        SV->>SV: Unlock all contributor funds
-        SV-->>CF: ✅ Funds unlocked
-        CF->>CF: Mark campaign failed
-        CF-->>F: ❌ Campaign failed
-        F-->>U: "Campaign failed.<br/>Refunds available to contributors"
-    end
-```
+<img src="diagrams/svg/campaign-finalization.svg" alt="Campaign Finalization Flow" width="100%">
 
 ### 4. Token Claim Flow
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#e6ffe6','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
-sequenceDiagram
-    participant U as 👤 Contributor
-    participant F as 🎨 Frontend
-    participant SDK as 🔐 FHEVM SDK
-    participant CF as 📝 ConfidentialFundraising
-    participant CT as 🪙 CampaignToken
-
-    U->>F: Click "Claim Tokens"
-
-    F->>CF: getEncryptedContribution(campaignId)
-    CF-->>F: encryptedContribution
-    F->>SDK: Decrypt contribution amount
-    SDK-->>F: decryptedContribution
-
-    F->>CF: claimTokens(campaignId)
-    CF->>CF: Verify campaign successful
-    CF->>CF: Calculate tokens:<br/>userTokens = (contribution / target) * MAX_SUPPLY
-    CF->>CT: mint(contributor, userTokens)
-    CT->>CT: Mint tokens to contributor
-    CT-->>CF: ✅ Tokens minted
-    CF->>CF: Mark user as claimed
-    CF-->>F: ✅ Tokens claimed
-    F-->>U: "🎊 Received X tokens!"
-
-    Note over CT: Max supply: 1 billion tokens<br/>per campaign
-```
+<img src="diagrams/svg/token-claim.svg" alt="Token Claim Flow" width="100%">
 
 ### 5. Vault Balance & Withdrawal Flow
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#fff0f0','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
-sequenceDiagram
-    participant U as 👤 User
-    participant F as 🎨 Frontend
-    participant SDK as 🔐 FHEVM SDK
-    participant SV as 💰 ShareVault
-
-    rect rgb(240, 248, 255)
-        Note over U,SV: Check Balance
-        U->>F: View vault balance
-        F->>SV: getEncryptedBalance()
-        SV-->>F: encryptedBalance
-        F->>SV: getEncryptedTotalLocked()
-        SV-->>F: encryptedLocked
-
-        par Decrypt Balance
-            F->>SDK: Decrypt balance
-            SDK-->>F: decryptedBalance
-        and Decrypt Locked
-            F->>SDK: Decrypt locked
-            SDK-->>F: decryptedLocked
-        end
-
-        F->>F: Calculate available:<br/>available = balance - locked
-        F-->>U: Show balance breakdown
-    end
-
-    rect rgb(240, 255, 240)
-        Note over U,SV: Withdraw Funds
-        U->>F: Enter withdrawal amount
-        F->>F: Verify amount <= available
-        F->>SV: withdraw(amount)
-        SV->>SV: Verify sufficient balance
-        SV->>SV: Update encrypted balance
-        SV->>U: Transfer ETH
-        SV-->>F: ✅ Withdrawal successful
-        F-->>U: "✅ Withdrawal complete"
-    end
-```
+<img src="diagrams/svg/vault-balance-withdrawal.svg" alt="Vault Balance & Withdrawal Flow" width="100%">
 
 ### 6. Encryption & Decryption Flow (Technical)
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f5f5f5','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'}}}%%
-
-graph LR
-    subgraph "📤 Encryption Process"
-        A[Plain Value<br/>e.g., 100 ETH] --> B[FHEVM SDK<br/>Encrypt]
-        B --> C[Encrypted Value<br/>euint64]
-        B --> D[Proof<br/>ZK Proof]
-        C --> E[Smart Contract]
-        D --> E
-    end
-
-    subgraph "📥 Decryption Process"
-        F[Smart Contract] --> G[getEncrypted...<br/>Read Function]
-        G --> H[Encrypted Value]
-        H --> I[FHEVM SDK<br/>Client-Side Decrypt]
-        I --> J[Verify Permissions]
-        J --> K[Plain Value<br/>100 ETH]
-    end
-
-    E -.Stored On-Chain.-> F
-
-    style A fill:#ffcccc,stroke:#333,stroke-width:2px
-    style K fill:#ccffcc,stroke:#333,stroke-width:2px
-    style E fill:#cce5ff,stroke:#333,stroke-width:2px
-    style F fill:#cce5ff,stroke:#333,stroke-width:2px
-    style I fill:#ffd700,stroke:#333,stroke-width:3px
-```
+<img src="diagrams/svg/encryption-decryption.svg" alt="Encryption & Decryption Flow" width="100%">
 
 ---
 
@@ -633,21 +439,6 @@ NEXT_PUBLIC_CHAIN_ID=11155111
 
 **Note**: `viaIR: true` is required for FHEVM contracts to compile correctly.
 
-### Gas Estimates
-
-Approximate gas costs on Sepolia testnet:
-
-| Operation | Gas Cost | USD Cost (est.) |
-|-----------|----------|-----------------|
-| Deploy ShareVault | ~3,500,000 | ~$5-10 |
-| Deploy ConfidentialFundraising | ~4,500,000 | ~$7-15 |
-| Create Campaign | ~250,000 | ~$0.50-1 |
-| Deposit to Vault | ~150,000 | ~$0.30-0.60 |
-| Contribute | ~300,000 | ~$0.60-1.20 |
-| Finalize Campaign (success) | ~800,000 | ~$1.50-3 |
-| Claim Tokens | ~200,000 | ~$0.40-0.80 |
-| Withdraw | ~120,000 | ~$0.25-0.50 |
-
 ### Security Features
 
 - **Access Control**: Owner-only functions protected by modifiers
@@ -658,41 +449,6 @@ Approximate gas costs on Sepolia testnet:
 - **Locked Funds Isolation**: Per-campaign fund locks prevent double-spending
 - **Cache Expiration**: 10-minute timeout on decrypted values
 - **Max Supply Enforcement**: Token minting capped at 1 billion
-
----
-
-## 🎨 Mermaid Diagram Customization
-
-All diagrams in this README use a hand-drawn style theme. To customize the appearance:
-
-### Change Theme Colors
-
-Edit the `themeVariables` in the mermaid initialization:
-
-```javascript
-%%{init: {'theme':'base', 'themeVariables': {
-  'primaryColor':'#your-color',
-  'fontFamily':'Comic Sans MS, cursive, sans-serif',
-  'fontSize':'14px'
-}}}%%
-```
-
-### Use Different Fonts
-
-Replace `'fontFamily':'Comic Sans MS, cursive, sans-serif'` with:
-- `'fontFamily':'Patrick Hand, cursive'` - More hand-drawn
-- `'fontFamily':'Architects Daughter, cursive'` - Architect sketch style
-- `'fontFamily':'Indie Flower, cursive'` - Casual handwriting
-
-### Render in Tools
-
-These diagrams render beautifully in:
-- GitHub README
-- GitLab
-- VS Code with Mermaid extensions
-- Notion
-- Obsidian
-- Any Markdown viewer with Mermaid support
 
 ---
 
@@ -736,4 +492,14 @@ This platform uses **FHEVM (Fully Homomorphic Encryption)** to ensure:
 
 ---
 
-Built with ❤️ using Zama's FHEVM technology
+## 👨‍💻 Author
+
+**cristhedev**
+
+- 🐙 GitHub: [@cris-the-dev](https://github.com/cris-the-dev)
+- 📧 Email: tiennln.work@gmail.com
+- 🔗 Repository: [confidental-fundraising](https://github.com/cris-the-dev/confidental-fundraising)
+
+---
+
+Built with ❤️ by [cristhedev](https://github.com/cris-the-dev) using Zama's FHEVM technology

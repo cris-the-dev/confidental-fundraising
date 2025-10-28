@@ -14,6 +14,7 @@ import "./ShareVault.sol";
 
 /**
  * @title ConfidentialFundraising
+ * @author cristhedev (https://github.com/cris-the-dev)
  * @notice A privacy-preserving crowdfunding platform using fully homomorphic encryption (FHE)
  * @dev This contract enables confidential fundraising campaigns where contribution amounts remain encrypted
  * on-chain. It leverages FHEVM to perform operations on encrypted data without revealing individual
@@ -26,7 +27,7 @@ import "./ShareVault.sol";
  * - Refund mechanism for failed campaigns
  * - Time-based campaign deadlines
  *
- * @custom:security-contact security@example.com
+ * @custom:security-contact tiennln.work@gmail.com
  *
  * Note: Contribution amounts and targets are stored in wei, not ether units
  */
