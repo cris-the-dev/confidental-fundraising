@@ -138,7 +138,7 @@ classDiagram
 ### 1. Campaign Creation Flow
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffcc00','primaryTextColor':'#000','primaryBorderColor':'#000','lineColor':'#000','secondaryColor':'#ffeb99','tertiaryColor':'#fff','noteBkgColor':'#ffeb99','noteTextColor':'#000','noteBorderColor':'#000','actorBkg':'#ffcc00','actorBorder':'#000','actorTextColor':'#000','actorLineColor':'#000','signalColor':'#000','signalTextColor':'#000','labelBoxBkgColor':'#ffeb99','labelBoxBorderColor':'#000','labelTextColor':'#000','loopTextColor':'#000','activationBorderColor':'#000','activationBkgColor':'#ffffcc','sequenceNumberColor':'#000'}}}%%
+%%{init: {'theme':'neutral', 'look': 'handDrawn'}}%%
 sequenceDiagram
     participant U as 👤 Campaign Owner
     participant F as 🎨 Frontend
@@ -160,6 +160,7 @@ sequenceDiagram
 ### 2. Contribution Flow
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#66ccff','primaryTextColor':'#000','primaryBorderColor':'#000','lineColor':'#000','secondaryColor':'#b3e5ff','tertiaryColor':'#fff','noteBkgColor':'#b3e5ff','noteTextColor':'#000','noteBorderColor':'#000','actorBkg':'#66ccff','actorBorder':'#000','actorTextColor':'#000','actorLineColor':'#000','signalColor':'#000','signalTextColor':'#000','labelBoxBkgColor':'#b3e5ff','labelBoxBorderColor':'#000','labelTextColor':'#000','loopTextColor':'#000','activationBorderColor':'#000','activationBkgColor':'#e6f7ff','sequenceNumberColor':'#000'}}}%%
 sequenceDiagram
     participant U as 👤 Contributor
     participant F as 🎨 Frontend
@@ -195,6 +196,7 @@ sequenceDiagram
 ### 3. Campaign Finalization Flow
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#cc99ff','primaryTextColor':'#000','primaryBorderColor':'#000','lineColor':'#000','secondaryColor':'#e6ccff','tertiaryColor':'#fff','noteBkgColor':'#e6ccff','noteTextColor':'#000','noteBorderColor':'#000','actorBkg':'#cc99ff','actorBorder':'#000','actorTextColor':'#000','actorLineColor':'#000','signalColor':'#000','signalTextColor':'#000','labelBoxBkgColor':'#e6ccff','labelBoxBorderColor':'#000','labelTextColor':'#000','loopTextColor':'#000','activationBorderColor':'#000','activationBkgColor':'#f5ebff','sequenceNumberColor':'#000'}}}%%
 sequenceDiagram
     participant U as 👤 Campaign Owner
     participant F as 🎨 Frontend
