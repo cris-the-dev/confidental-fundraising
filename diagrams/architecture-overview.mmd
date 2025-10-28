@@ -1,0 +1,50 @@
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+
+graph TB
+    subgraph "👤 User Layer"
+        User[Web Browser<br/>+ Wallet]
+    end
+
+    subgraph "🎨 Frontend Layer"
+        NextJS[Next.js 15 App]
+        Privy[Privy Auth]
+        FHEVM_SDK[CDN/Zama FHEVM<br/>Relayer SDK]
+    end
+
+    subgraph "⛓️ Blockchain Layer"
+        CF[ConfidentialFundraising<br/>Contract]
+        SV[ShareVault<br/>Escrow Contract]
+        CT[CampaignToken<br/>ERC20]
+    end
+
+    subgraph "🔐 FHEVM Layer"
+        Encrypt[Client-Side<br/>Encryption]
+        Decrypt[Client-Side<br/>Decryption]
+        FHE_Ops[On-Chain FHE<br/>Operations]
+    end
+
+    User <--> NextJS
+    NextJS <--> Privy
+    NextJS <--> FHEVM_SDK
+    FHEVM_SDK <--> Encrypt
+    FHEVM_SDK <--> Decrypt
+    NextJS <--> CF
+    NextJS <--> SV
+    NextJS <--> CT
+    CF <--> SV
+    CF --> CT
+    CF <--> FHE_Ops
+    SV <--> FHE_Ops
+    Encrypt --> FHE_Ops
+    FHE_Ops --> Decrypt
+
+    style User fill:#ffeb99,stroke:#333,stroke-width:3px
+    style NextJS fill:#61dafb,stroke:#333,stroke-width:3px
+    style CF fill:#ff6b6b,stroke:#333,stroke-width:3px
+    style SV fill:#4ecdc4,stroke:#333,stroke-width:3px
+    style FHEVM_SDK fill:#a8dadc,stroke:#333,stroke-width:3px
+    style FHE_Ops fill:#457b9d,stroke:#333,stroke-width:3px,color:#fff

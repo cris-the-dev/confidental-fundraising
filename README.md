@@ -2,11 +2,18 @@
 
 A privacy-preserving decentralized fundraising platform built with **FHEVM (Fully Homomorphic Encryption Virtual Machine)**. Contributors can support campaigns while keeping their contribution amounts completely private, with only authorized parties able to decrypt sensitive information.
 
+Author: [@cris_thedev](https://x.com/cris_thedev)
+---
+
+| Contract Name | Network | Contract Address
+|----------|-------------|--------|
+| ConfidentialFundraising | Sepolia | [`0xAEF00d99124f3c96720Ac6047B5ACE3b677e5E26`](https://sepolia.etherscan.io/address/0xAEF00d99124f3c96720Ac6047B5ACE3b677e5E26) |
+| ShareVault | Sepolia | [`0x14118D98a73CD7905d71eB4aD12dACa20cF67999`](https://sepolia.etherscan.io/address/0x14118D98a73CD7905d71eB4aD12dACa20cF67999) |
 ---
 
 ## 📖 Concept
 
-The Confidential Fundraising Platform revolutionizes crowdfunding by combining blockchain transparency with **cryptographic privacy**. Traditional fundraising platforms expose all contribution amounts publicly, which can influence donor behavior and compromise privacy. Our solution leverages **homomorphic encryption** to keep contribution amounts encrypted on-chain while still enabling mathematical operations like summing total contributions.
+The Confidential Fundraising Platform revolutionizes crowdfunding by combining blockchain transparency with **cryptographic privacy**. Traditional fundraising platforms expose all contribution amounts publicly, which can influence donor behavior and compromise privacy. My solution leverages **homomorphic encryption** to keep contribution amounts encrypted on-chain while still enabling mathematical operations like summing total contributions.
 
 ### Key Features
 
@@ -24,112 +31,11 @@ The Confidential Fundraising Platform revolutionizes crowdfunding by combining b
 
 The platform consists of three main layers: **Smart Contracts** (on-chain logic), **Frontend Application** (user interface), and **FHEVM Layer** (encryption/decryption).
 
-```mermaid
-graph TB
-    subgraph "👤 User Layer"
-        User[Web Browser<br/>+ Wallet]
-    end
-
-    subgraph "🎨 Frontend Layer"
-        NextJS[Next.js 15 App]
-        Privy[Privy Auth]
-        FHEVM_SDK[Zama FHEVM<br/>Relayer SDK]
-    end
-
-    subgraph "⛓️ Blockchain Layer"
-        CF[ConfidentialFundraising<br/>Contract]
-        SV[ShareVault<br/>Escrow Contract]
-        CT[CampaignToken<br/>ERC20]
-    end
-
-    subgraph "🔐 FHEVM Layer"
-        Encrypt[Client-Side<br/>Encryption]
-        Decrypt[Client-Side<br/>Decryption]
-        FHE_Ops[On-Chain FHE<br/>Operations]
-    end
-
-    User <--> NextJS
-    NextJS <--> Privy
-    NextJS <--> FHEVM_SDK
-    FHEVM_SDK <--> Encrypt
-    FHEVM_SDK <--> Decrypt
-    NextJS <--> CF
-    NextJS <--> SV
-    NextJS <--> CT
-    CF <--> SV
-    CF --> CT
-    CF <--> FHE_Ops
-    SV <--> FHE_Ops
-    Encrypt --> FHE_Ops
-    FHE_Ops --> Decrypt
-
-    style User fill:#ffeb99,stroke:#333,stroke-width:3px
-    style NextJS fill:#61dafb,stroke:#333,stroke-width:3px
-    style CF fill:#ff6b6b,stroke:#333,stroke-width:3px
-    style SV fill:#4ecdc4,stroke:#333,stroke-width:3px
-    style FHEVM_SDK fill:#a8dadc,stroke:#333,stroke-width:3px
-    style FHE_Ops fill:#457b9d,stroke:#333,stroke-width:3px,color:#fff
-```
+<img src="diagrams/png/architecture-overview.png" alt="Architecture Overview" width="80%">
 
 ### Smart Contract Architecture
 
-```mermaid
-classDiagram
-    class ConfidentialFundraising {
-        +createCampaign()
-        +contribute()
-        +finalizeCampaign()
-        +claimTokens()
-        +getEncryptedContribution()
-        +getEncryptedTotalRaised()
-        -Campaign[] campaigns
-        -mapping contributions
-    }
-
-    class ShareVault {
-        +deposit()
-        +withdraw()
-        +lockFunds()
-        +transferLockedFunds()
-        +unlockFunds()
-        +getEncryptedBalance()
-        -euint64 balances
-        -mapping lockedAmounts
-    }
-
-    class CampaignToken {
-        +mint()
-        +balanceOf()
-        +transfer()
-        -uint256 MAX_SUPPLY
-        -uint256 campaignId
-    }
-
-    class FundraisingStorage {
-        #Campaign[] campaigns
-        #euint64 contributions
-        #euint64 totalRaised
-        #bool finalized
-    }
-
-    class ShareVaultStorage {
-        #euint64 balances
-        #euint64 lockedAmounts
-        #uint256 totalLocked
-    }
-
-    class EncryptedHelper {
-        +decodeUint64()
-        +decodeBool()
-    }
-
-    ConfidentialFundraising --|> FundraisingStorage
-    ShareVault --|> ShareVaultStorage
-    ConfidentialFundraising --> ShareVault : lockFunds()
-    ConfidentialFundraising --> CampaignToken : creates
-    ConfidentialFundraising ..> EncryptedHelper : uses
-    ShareVault ..> EncryptedHelper : uses
-```
+<img src="diagrams/png/smart-contract-architecture.png" alt="Smart Contract Architecture" width="80%">
 
 ---
 
@@ -137,27 +43,27 @@ classDiagram
 
 ### 1. Campaign Creation Flow
 
-<img src="diagrams/svg/campaign-creation.svg" alt="Campaign Creation Flow" width="100%">
+<img src="diagrams/png/campaign-creation.png" alt="Campaign Creation Flow" width="80%">
 
 ### 2. Contribution Flow
 
-<img src="diagrams/svg/contribute.svg" alt="Contribution Flow" width="100%">
+<img src="diagrams/png/contribute.png" alt="Contribution Flow" width="80%">
 
 ### 3. Campaign Finalization Flow
 
-<img src="diagrams/svg/campaign-finalization.svg" alt="Campaign Finalization Flow" width="100%">
+<img src="diagrams/png/campaign-finalization.png" alt="Campaign Finalization Flow" width="80%">
 
 ### 4. Token Claim Flow
 
-<img src="diagrams/svg/token-claim.svg" alt="Token Claim Flow" width="100%">
+<img src="diagrams/png/token-claim.png" alt="Token Claim Flow" width="80%">
 
 ### 5. Vault Balance & Withdrawal Flow
 
-<img src="diagrams/svg/vault-balance-withdrawal.svg" alt="Vault Balance & Withdrawal Flow" width="100%">
+<img src="diagrams/png/vault-balance-withdrawal.png" alt="Vault Balance & Withdrawal Flow" width="80%">
 
 ### 6. Encryption & Decryption Flow (Technical)
 
-<img src="diagrams/svg/encryption-decryption.svg" alt="Encryption & Decryption Flow" width="100%">
+<img src="diagrams/png/encryption-decryption.png" alt="Encryption & Decryption Flow" width="80%">
 
 ---
 

@@ -1,0 +1,61 @@
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+
+classDiagram
+    class ConfidentialFundraising {
+        +createCampaign()
+        +contribute()
+        +finalizeCampaign()
+        +claimTokens()
+        +getEncryptedContribution()
+        +getEncryptedTotalRaised()
+        -Campaign[] campaigns
+        -mapping contributions
+    }
+
+    class ShareVault {
+        +deposit()
+        +withdraw()
+        +lockFunds()
+        +transferLockedFunds()
+        +unlockFunds()
+        +getEncryptedBalance()
+        -euint64 balances
+        -mapping lockedAmounts
+    }
+
+    class CampaignToken {
+        +mint()
+        +balanceOf()
+        +transfer()
+        -uint256 MAX_SUPPLY
+        -uint256 campaignId
+    }
+
+    class FundraisingStorage {
+        #Campaign[] campaigns
+        #euint64 contributions
+        #euint64 totalRaised
+        #bool finalized
+    }
+
+    class ShareVaultStorage {
+        #euint64 balances
+        #euint64 lockedAmounts
+        #uint256 totalLocked
+    }
+
+    class EncryptedHelper {
+        +decodeUint64()
+        +decodeBool()
+    }
+
+    ConfidentialFundraising --|> FundraisingStorage
+    ShareVault --|> ShareVaultStorage
+    ConfidentialFundraising --> ShareVault : lockFunds()
+    ConfidentialFundraising --> CampaignToken : creates
+    ConfidentialFundraising ..> EncryptedHelper : uses
+    ShareVault ..> EncryptedHelper : uses
