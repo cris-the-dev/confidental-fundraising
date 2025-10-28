@@ -63,7 +63,38 @@ The platform consists of three main layers: **Smart Contracts** (on-chain logic)
 
 ### 6. Encryption & Decryption Flow (Technical)
 
-<img src="diagrams/svg/encryption-decryption.svg" alt="Encryption & Decryption Flow" width="80%">
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+
+graph LR
+    subgraph "📤 Encryption Process"
+        A[Plain Value<br/>e.g., 100 ETH] --> B[FHEVM SDK<br/>Encrypt]
+        B --> C[Encrypted Value<br/>euint64]
+        B --> D[Proof<br/>ZK Proof]
+        C --> E[Smart Contract]
+        D --> E
+    end
+
+    subgraph "📥 Decryption Process"
+        F[Smart Contract] --> G[getEncrypted...<br/>Read Function]
+        G --> H[Encrypted Value]
+        H --> I[FHEVM SDK<br/>Client-Side Decrypt]
+        I --> J[Verify Permissions]
+        J --> K[Plain Value<br/>100 ETH]
+    end
+
+    E -.Stored On-Chain.-> F
+
+    style A fill:#ffcccc,stroke:#333,stroke-width:2px
+    style K fill:#ccffcc,stroke:#333,stroke-width:2px
+    style E fill:#cce5ff,stroke:#333,stroke-width:2px
+    style F fill:#cce5ff,stroke:#333,stroke-width:2px
+    style I fill:#ffd700,stroke:#333,stroke-width:3px
+```
 
 ---
 
