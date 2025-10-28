@@ -52,8 +52,6 @@ export function useCampaigns() {
 
       const durationSeconds = BigInt(durationDays * 24 * 60 * 60);
 
-      console.log("Creating campaign with target (Wei):", targetWei.toString());
-
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,

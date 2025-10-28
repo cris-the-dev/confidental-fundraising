@@ -33,9 +33,6 @@ export function VaultBalance() {
 
       const { encryptedBalance, encryptedLocked } = await getEncryptedBalanceAndLocked();
 
-      console.log('📦 Encrypted balance:', encryptedBalance);
-      console.log('📦 Encrypted locked:', encryptedLocked);
-
       // Decrypt balance
       let decryptedBalance = 0n;
       if (encryptedBalance && BigInt(encryptedBalance) !== 0n) {
@@ -47,9 +44,6 @@ export function VaultBalance() {
       if (encryptedLocked && BigInt(encryptedLocked) !== 0n) {
         decryptedLocked = await decrypt(encryptedLocked, VAULT_ADDRESS);
       }
-
-      console.log('✅ Decrypted balance:', decryptedBalance);
-      console.log('✅ Decrypted locked:', decryptedLocked);
 
       setBalance(decryptedBalance);
       setLocked(decryptedLocked);

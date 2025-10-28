@@ -48,8 +48,6 @@ export function ViewMyContribution({ campaignId, externalProcessing = false }: P
       // Get encrypted contribution from hook
       const encryptedContribution = await getEncryptedContribution(campaignId, wallet.address);
 
-      console.log('📦 Encrypted contribution:', encryptedContribution);
-
       // Check if contribution exists (handle is not 0)
       if (!encryptedContribution || BigInt(encryptedContribution) === 0n) {
         setError("No contribution found.");
@@ -59,8 +57,6 @@ export function ViewMyContribution({ campaignId, externalProcessing = false }: P
 
       // Decrypt using useDecrypt hook
       const decryptedValue = await decrypt(encryptedContribution, CONTRACT_ADDRESS);
-
-      console.log('✅ Decrypted contribution:', decryptedValue);
 
       setContribution(decryptedValue);
     } catch (err: any) {

@@ -49,9 +49,6 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
       // Get encrypted balance and locked amounts
       const { encryptedBalance, encryptedLocked } = await getEncryptedBalanceAndLocked();
 
-      console.log('📦 Encrypted balance:', encryptedBalance);
-      console.log('📦 Encrypted locked:', encryptedLocked);
-
       // Decrypt balance
       let balance = 0n;
       if (encryptedBalance && BigInt(encryptedBalance) !== 0n) {
@@ -67,8 +64,6 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
       // Calculate available
       const available = balance - locked;
       setAvailableBalance(available);
-
-      console.log('✅ Available balance:', available);
     } catch (err: any) {
       console.error('Balance check error:', err);
       setError('Failed to check vault balance. Please try again.');
@@ -103,15 +98,10 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
       return;
     }
 
-    // ✅ NEW: No longer require balance decryption before contributing!
-    // The contract will handle insufficient funds in encrypted form
-
     setError(null);
-    setIsSubmitting(true); // Show loading immediately
+    setIsSubmitting(true);
 
     try {
-      console.log(`💰 Contributing ${amount} ETH to campaign ${campaignId}`);
-
       await contribute(campaignId, amount);
 
       setSuccess(true);

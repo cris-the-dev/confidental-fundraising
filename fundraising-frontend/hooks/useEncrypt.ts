@@ -39,15 +39,9 @@ export const useEncrypt = () => {
           userAddress
         );
 
-        console.log(`Contract: ${CONTRACT_ADDRESS}`);
-        console.log(`User: ${userAddress}`);
-        console.log(`Encrypting value (Wei): ${value.toString()}`);
-
         input.add64(value);
 
         const encryptedInput = await input.encrypt();
-
-        console.log(`encryptedInput: ${encryptedInput}`);
 
         if (!encryptedInput.handles?.[0] || !encryptedInput.inputProof) {
           throw new Error("Invalid encryption result");

@@ -301,7 +301,7 @@ export function FinalizeCampaignModal({
             {/* Token Info */}
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <h4 className="text-sm font-medium text-purple-900 mb-2">
-                📊 Token Distribution
+                Token Distribution
               </h4>
               <ul className="text-xs text-purple-800 space-y-1">
                 <li>• Total Supply: 1,000,000,000 tokens</li>

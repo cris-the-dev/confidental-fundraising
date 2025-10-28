@@ -40,8 +40,6 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
       // Get encrypted total raised from hook
       const encryptedTotal = await getEncryptedTotalRaised(campaignId);
 
-      console.log('📦 Encrypted total raised:', encryptedTotal);
-
       // Check if total exists
       if (!encryptedTotal || BigInt(encryptedTotal) === 0n) {
         setTotalRaised(0n);
@@ -51,8 +49,6 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
 
       // Decrypt using useDecrypt hook
       const decryptedValue = await decrypt(encryptedTotal, CONTRACT_ADDRESS);
-
-      console.log('✅ Decrypted total raised:', decryptedValue);
 
       setTotalRaised(decryptedValue);
     } catch (err: any) {
