@@ -25,8 +25,6 @@ The Confidential Fundraising Platform revolutionizes crowdfunding by combining b
 The platform consists of three main layers: **Smart Contracts** (on-chain logic), **Frontend Application** (user interface), and **FHEVM Layer** (encryption/decryption).
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f0f0f0','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','secondaryColor':'#e8e8e8','tertiaryColor':'#fff','fontFamily':'Comic Sans MS, cursive, sans-serif','fontSize':'14px'},'flowchart':{'curve':'basis','padding':20}}}%%
-
 graph TB
     subgraph "👤 User Layer"
         User[Web Browser<br/>+ Wallet]
@@ -76,8 +74,6 @@ graph TB
 ### Smart Contract Architecture
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f0f0f0','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'}}}%%
-
 classDiagram
     class ConfidentialFundraising {
         +createCampaign()
@@ -142,8 +138,6 @@ classDiagram
 ### 1. Campaign Creation Flow
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#fff4e6','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
 sequenceDiagram
     participant U as 👤 Campaign Owner
     participant F as 🎨 Frontend
@@ -165,8 +159,6 @@ sequenceDiagram
 ### 2. Contribution Flow
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#e8f4f8','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
 sequenceDiagram
     participant U as 👤 Contributor
     participant F as 🎨 Frontend
@@ -202,8 +194,6 @@ sequenceDiagram
 ### 3. Campaign Finalization Flow
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f0e6ff','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
 sequenceDiagram
     participant U as 👤 Campaign Owner
     participant F as 🎨 Frontend
@@ -249,8 +239,6 @@ sequenceDiagram
 ### 4. Token Claim Flow
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#e6ffe6','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
 sequenceDiagram
     participant U as 👤 Contributor
     participant F as 🎨 Frontend
@@ -281,8 +269,6 @@ sequenceDiagram
 ### 5. Vault Balance & Withdrawal Flow
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#fff0f0','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'},'sequence':{'mirrorActors':false}}}%%
-
 sequenceDiagram
     participant U as 👤 User
     participant F as 🎨 Frontend
@@ -325,8 +311,6 @@ sequenceDiagram
 ### 6. Encryption & Decryption Flow (Technical)
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f5f5f5','primaryTextColor':'#333','primaryBorderColor':'#333','lineColor':'#666','fontFamily':'Comic Sans MS, cursive, sans-serif'}}}%%
-
 graph LR
     subgraph "📤 Encryption Process"
         A[Plain Value<br/>e.g., 100 ETH] --> B[FHEVM SDK<br/>Encrypt]
