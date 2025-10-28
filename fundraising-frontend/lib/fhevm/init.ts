@@ -161,7 +161,6 @@ export async function initializeFhevm(): Promise<any> {
     console.log('📡 SDK Network Config:');
     console.log('  - ACL Address:', sdkNetworkConfig.aclContractAddress);
     console.log('  - KMS Address:', sdkNetworkConfig.kmsContractAddress);
-    console.log('  - Gateway URL:', sdkNetworkConfig.gatewayUrl);
 
     // Create FHEVM instance
     console.log('🔨 Creating FHEVM instance...');

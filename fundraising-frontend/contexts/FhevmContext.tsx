@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { FhevmInstance } from 'fhevmjs';
 import { initializeFhevm } from '../lib/fhevm/init';
+import { FhevmInstance } from '@zama-fhe/relayer-sdk/web';
 
 interface FhevmContextType {
   instance: FhevmInstance | null;

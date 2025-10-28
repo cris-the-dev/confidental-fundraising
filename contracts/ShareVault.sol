@@ -353,7 +353,12 @@ contract ShareVault is
         // Grant permissions
         FHE.allowThis(lockedAmounts[user][campaignId]);
         FHE.allow(lockedAmounts[user][campaignId], campaignContract);
+        FHE.allow(lockedAmounts[user][campaignId], user);
+
+
         FHE.allowThis(totalLocked[user]);
+        FHE.allow(totalLocked[user], campaignContract);
+        FHE.allow(totalLocked[user], user);
 
         // Invalidate cached available balance since locked amount changed
         delete decryptedAvailableBalance[user];
@@ -469,5 +474,34 @@ contract ShareVault is
         emit FundsTransferred(user, campaignOwner, campaignId);
 
         return returnAmount;
+    }
+
+    /**
+     * @notice Gets the encrypted balance and locked amount for a user
+     * @dev For user-side decryption. Returns both values so client can calculate available (balance - locked).
+     * User must have been granted FHE permissions.
+     * @return balance The encrypted total balance
+     * @return locked The encrypted total locked amount
+     */
+    function getEncryptedBalanceAndLocked() external view returns (euint64 balance, euint64 locked) {
+        return (encryptedBalances[msg.sender], totalLocked[msg.sender]);
+    }
+
+    /**
+     * @notice Gets the encrypted total balance for a user
+     * @dev For user-side decryption. User must have been granted FHE permissions.
+     * @return The encrypted total balance
+     */
+    function getEncryptedBalance() external view returns (euint64) {
+        return encryptedBalances[msg.sender];
+    }
+
+    /**
+     * @notice Gets the encrypted total locked amount for a user
+     * @dev For user-side decryption. User must have been granted FHE permissions.
+     * @return The encrypted total locked amount
+     */
+    function getEncryptedTotalLocked() external view returns (euint64) {
+        return totalLocked[msg.sender];
     }
 }

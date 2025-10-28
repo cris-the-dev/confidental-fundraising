@@ -41,6 +41,8 @@ export interface ConfidentialFundraisingInterface extends Interface {
       | "getCampaign"
       | "getCampaignContributors"
       | "getContributionStatus"
+      | "getEncryptedContribution"
+      | "getEncryptedTotalRaised"
       | "getMyContribution"
       | "getTotalRaised"
       | "getTotalRaisedStatus"
@@ -124,6 +126,14 @@ export interface ConfidentialFundraisingInterface extends Interface {
   encodeFunctionData(
     functionFragment: "getContributionStatus",
     values: [BigNumberish, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getEncryptedContribution",
+    values: [BigNumberish, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getEncryptedTotalRaised",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getMyContribution",
@@ -218,6 +228,14 @@ export interface ConfidentialFundraisingInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getContributionStatus",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getEncryptedContribution",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getEncryptedTotalRaised",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -527,7 +545,7 @@ export interface ConfidentialFundraising extends BaseContract {
   getCampaign: TypedContractMethod<
     [campaignId: BigNumberish],
     [
-      [string, string, string, bigint, bigint, boolean, boolean] & {
+      [string, string, string, bigint, bigint, boolean, boolean, string] & {
         owner: string;
         title: string;
         description: string;
@@ -535,6 +553,7 @@ export interface ConfidentialFundraising extends BaseContract {
         deadline: bigint;
         finalized: boolean;
         cancelled: boolean;
+        tokenAddress: string;
       }
     ],
     "view"
@@ -555,6 +574,18 @@ export interface ConfidentialFundraising extends BaseContract {
         cacheExpiry: bigint;
       }
     ],
+    "view"
+  >;
+
+  getEncryptedContribution: TypedContractMethod<
+    [campaignId: BigNumberish, user: AddressLike],
+    [string],
+    "view"
+  >;
+
+  getEncryptedTotalRaised: TypedContractMethod<
+    [campaignId: BigNumberish],
+    [string],
     "view"
   >;
 
@@ -732,7 +763,7 @@ export interface ConfidentialFundraising extends BaseContract {
   ): TypedContractMethod<
     [campaignId: BigNumberish],
     [
-      [string, string, string, bigint, bigint, boolean, boolean] & {
+      [string, string, string, bigint, bigint, boolean, boolean, string] & {
         owner: string;
         title: string;
         description: string;
@@ -740,6 +771,7 @@ export interface ConfidentialFundraising extends BaseContract {
         deadline: bigint;
         finalized: boolean;
         cancelled: boolean;
+        tokenAddress: string;
       }
     ],
     "view"
@@ -760,6 +792,16 @@ export interface ConfidentialFundraising extends BaseContract {
     ],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "getEncryptedContribution"
+  ): TypedContractMethod<
+    [campaignId: BigNumberish, user: AddressLike],
+    [string],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getEncryptedTotalRaised"
+  ): TypedContractMethod<[campaignId: BigNumberish], [string], "view">;
   getFunction(
     nameOrSignature: "getMyContribution"
   ): TypedContractMethod<[campaignId: BigNumberish], [bigint], "view">;

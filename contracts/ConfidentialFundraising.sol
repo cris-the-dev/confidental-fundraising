@@ -636,4 +636,32 @@ contract ConfidentialFundraising is
     ) external view returns (address[] memory) {
         return campaignContributors[campaignId];
     }
+
+    /**
+     * @notice Gets the encrypted contribution amount for a user in a campaign
+     * @dev For user-side decryption. User must have been granted FHE permissions.
+     * @param campaignId The ID of the campaign
+     * @param user The address of the contributor
+     * @return The encrypted contribution amount
+     */
+    function getEncryptedContribution(
+        uint16 campaignId,
+        address user
+    ) external view returns (euint64) {
+        return encryptedContributions[campaignId][user];
+    }
+
+    /**
+     * @notice Gets the encrypted total raised for a campaign
+     * @dev For user-side decryption. Campaign owner must have been granted FHE permissions.
+     * @param campaignId The ID of the campaign
+     * @return The encrypted total raised amount
+     */
+    function getEncryptedTotalRaised(
+        uint16 campaignId
+    ) external view returns (euint64) {
+        FundraisingStruct.Campaign memory campaign = campaigns[campaignId];
+
+        return campaign.totalRaised;
+    }
 }

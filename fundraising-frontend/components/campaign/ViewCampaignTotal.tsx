@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { formatEther } from 'viem';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useCampaigns } from '../../hooks/useCampaigns';
-import { useFhevm } from '../../contexts/FhevmContext';
-import { DecryptStatus } from '../../types';
+import { useDecrypt } from '../../hooks/useDecrypt';
+import { CONTRACT_ADDRESS } from '../../lib/contracts/config';
 
 interface Props {
   campaignId: number;
@@ -13,159 +13,50 @@ interface Props {
 }
 
 export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
-  const [status, setStatus] = useState<DecryptStatus>(DecryptStatus.NONE);
   const [totalRaised, setTotalRaised] = useState<bigint | null>(null);
-  const [cacheExpiry, setCacheExpiry] = useState<bigint>(0n);
   const [error, setError] = useState('');
-  const [isRequesting, setIsRequesting] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isDecrypting, setIsDecrypting] = useState(false);
 
-  const {
-    getTotalRaisedStatus,
-    requestTotalRaisedDecryption,
-    loading,
-  } = useCampaigns();
-  const { isInitialized, isLoading: fhevmLoading } = useFhevm();
+  const { loading, getEncryptedTotalRaised } = useCampaigns();
   const { authenticated } = usePrivy();
+  const { wallets } = useWallets();
+  const { decrypt } = useDecrypt();
 
-  // Fetch total raised status
-  const fetchStatus = async () => {
-    if (!authenticated || !isOwner) return;
-
-    try {
-      const statusData = await getTotalRaisedStatus(campaignId);
-
-      setStatus(statusData.status);
-      setTotalRaised(statusData.totalRaised);
-      setCacheExpiry(statusData.cacheExpiry);
-
-      // If status is DECRYPTED and we have data, stop polling
-      if (statusData.status === DecryptStatus.DECRYPTED && statusData.totalRaised > 0n) {
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-          setPollingInterval(null);
-        }
-      }
-    } catch (err: any) {
-      console.error('Error fetching status:', err);
-      if (!err.message?.includes('OnlyOwner')) {
-        setError('Failed to fetch status');
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (isOwner) {
-      fetchStatus();
-
-      if (status === DecryptStatus.PROCESSING) {
-        const interval = setInterval(fetchStatus, 5000);
-        setPollingInterval(interval);
-
-        return () => {
-          clearInterval(interval);
-        };
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campaignId, authenticated, isOwner, status]);
-
-  useEffect(() => {
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [pollingInterval]);
-
-  const handleRequestDecryption = async () => {
-    if (!authenticated) {
-      alert('Please connect your wallet');
-      return;
-    }
-
-    if (!isInitialized) {
-      setError('FHEVM is still initializing. Please wait a moment and try again.');
+  const handleViewTotal = async () => {
+    if (!authenticated || !wallets[0]?.address) {
+      setError('Please connect your wallet');
       return;
     }
 
     if (!isOwner) {
-      setError('Only the campaign owner can decrypt the total raised.');
+      setError('Only the campaign owner can view the total raised.');
       return;
     }
 
     setError('');
-    setIsRequesting(true);
+    setIsDecrypting(true);
 
     try {
-      console.log('📝 Requesting total decryption...');
-      await requestTotalRaisedDecryption(campaignId);
+      // Get encrypted total raised from hook
+      const encryptedTotal = await getEncryptedTotalRaised(campaignId);
 
-      // Update status to PROCESSING immediately for better UX
-      setStatus(DecryptStatus.PROCESSING);
+      // Check if total exists
+      if (!encryptedTotal || BigInt(encryptedTotal) === 0n) {
+        setTotalRaised(0n);
+        setIsDecrypting(false);
+        return;
+      }
 
-      // Start polling for status updates
-      const interval = setInterval(fetchStatus, 5000);
-      setPollingInterval(interval);
+      // Decrypt using useDecrypt hook
+      const decryptedValue = await decrypt(encryptedTotal, CONTRACT_ADDRESS);
 
-      console.log('✅ Decryption requested! Waiting for gateway...');
+      setTotalRaised(decryptedValue);
     } catch (err: any) {
-      console.error('❌ Request error:', err);
-
-      if (err.message?.includes('DecryptAlreadyInProgress')) {
-        setError('Decryption already in progress. Please wait...');
-        setStatus(DecryptStatus.PROCESSING);
-      } else if (err.message?.includes('OnlyOwner')) {
-        setError('Only the campaign owner can request this decryption.');
-      } else {
-        setError(err.message || 'Failed to request decryption');
-      }
+      console.error('Decryption error:', err);
+      setError(err.message || 'Failed to decrypt total raised');
     } finally {
-      setIsRequesting(false);
+      setIsDecrypting(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setError('');
-
-    // Check if cache is expired
-    if (isCacheExpired() && status === DecryptStatus.DECRYPTED) {
-      // Cache expired - request new decryption
-      setIsRequesting(true);
-      try {
-        console.log('🔄 Cache expired, requesting new decryption...');
-        await requestTotalRaisedDecryption(campaignId);
-
-        setStatus(DecryptStatus.PROCESSING);
-
-        const interval = setInterval(fetchStatus, 5000);
-        setPollingInterval(interval);
-
-        console.log('✅ Re-decryption requested! Waiting for gateway...');
-      } catch (err: any) {
-        console.error('❌ Re-decryption error:', err);
-
-        if (err.message?.includes('DecryptAlreadyInProgress')) {
-          setError('Decryption already in progress. Please wait...');
-          setStatus(DecryptStatus.PROCESSING);
-        } else if (err.message?.includes('OnlyOwner')) {
-          setError('Only the campaign owner can request this decryption.');
-        } else {
-          setError(err.message || 'Failed to request re-decryption');
-        }
-      } finally {
-        setIsRequesting(false);
-      }
-    } else {
-      // Cache still valid - just refresh the data
-      await fetchStatus();
-    }
-  };
-
-  // Check if cache is expired
-  const isCacheExpired = () => {
-    if (cacheExpiry === 0n) return false;
-    return cacheExpiry < BigInt(Math.floor(Date.now() / 1000));
   };
 
   // Don't show anything if not owner
@@ -186,73 +77,50 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
           💰 Campaign Total Raised
         </span>
 
-        {/* Action buttons based on status */}
-        <div className="flex gap-2">
-          {status === DecryptStatus.NONE && (
-            <button
-              onClick={handleRequestDecryption}
-              disabled={isRequesting || loading || !authenticated || fhevmLoading || !isInitialized}
-              className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
-            >
-              {isRequesting ? (
-                <span className="flex items-center gap-1">
-                  <svg
-                    className="animate-spin h-3 w-3"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Requesting...
-                </span>
-              ) : (
-                '🔐 Decrypt Total Raised'
-              )}
-            </button>
-          )}
-
-          {status === DecryptStatus.DECRYPTED && (
-            <button
-              onClick={handleRefresh}
-              className="text-xs bg-gray-500 text-white px-3 py-1.5 rounded-lg hover:bg-gray-600 transition font-medium"
-            >
-              🔄 Refresh
-            </button>
-          )}
-        </div>
+        {totalRaised === null && (
+          <button
+            onClick={handleViewTotal}
+            disabled={isDecrypting || loading || !authenticated}
+            className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
+          >
+            {isDecrypting ? (
+              <span className="flex items-center gap-1">
+                <svg
+                  className="animate-spin h-3 w-3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Decrypting...
+              </span>
+            ) : (
+              '🔐 View Total Raised'
+            )}
+          </button>
+        )}
       </div>
 
-      {/* FHEVM Loading State */}
-      {fhevmLoading && (
-        <div className="mb-3 bg-purple-100 border border-purple-200 rounded-lg p-3">
-          <p className="text-xs text-purple-800">
-            ⏳ Initializing encryption system...
-          </p>
-        </div>
-      )}
-
-      {/* Error message */}
       {error && (
         <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3">
           <p className="text-xs text-red-800">❌ {error}</p>
         </div>
       )}
 
-      {/* Status-based content */}
-      {status === DecryptStatus.NONE && (
+      {totalRaised === null ? (
         <div className="bg-white rounded-lg p-3 border border-purple-300">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
@@ -261,55 +129,10 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
             </span>
           </div>
           <p className="text-xs text-gray-600">
-            Campaign total is encrypted on-chain. Click the button above to decrypt and view the total amount raised.
+            Campaign total is encrypted on-chain. Click the button above to decrypt instantly.
           </p>
         </div>
-      )}
-
-      {status === DecryptStatus.PROCESSING && (
-        <div className="bg-white rounded-lg p-4 border border-purple-300">
-          <div className="flex items-center gap-3 mb-3">
-            <svg
-              className="animate-spin h-5 w-5 text-purple-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-purple-900">
-                  Decrypting...
-                </span>
-              </div>
-              <p className="text-xs text-purple-700">
-                Please wait 10-30 seconds while the decryption gateway processes your request.
-              </p>
-            </div>
-          </div>
-
-          {/* Progress indicator */}
-          <div className="w-full bg-purple-200 rounded-full h-1.5 overflow-hidden">
-            <div className="bg-purple-600 h-1.5 rounded-full animate-progress"></div>
-          </div>
-        </div>
-      )}
-
-      {status === DecryptStatus.DECRYPTED && totalRaised !== null && (
+      ) : (
         <div className="bg-white rounded-lg p-4 border border-purple-300">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -332,17 +155,9 @@ export function ViewCampaignTotal({ campaignId, isOwner }: Props) {
                   {totalRaised.toString()} Wei
                 </p>
 
-                {isCacheExpired() && (
-                  <p className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                    ⚠️ Cache expired - click refresh to decrypt again
-                  </p>
-                )}
-
-                {!isCacheExpired() && (
-                  <p className="text-xs text-purple-600">
-                    🔒 Only you (campaign owner) can see this amount (cached for 10 minutes)
-                  </p>
-                )}
+                <p className="text-xs text-purple-600">
+                  🔒 Only you (campaign owner) can see this amount
+                </p>
               </div>
             </>
           ) : (

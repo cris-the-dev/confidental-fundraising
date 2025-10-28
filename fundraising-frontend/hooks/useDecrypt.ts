@@ -4,8 +4,9 @@ import { useState, useCallback } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
-import { CONTRACT_ADDRESS } from "../lib/contracts/config";
 import { useFhevm } from "../contexts/FhevmContext";
+import { HandleContractPair } from "@zama-fhe/relayer-sdk/web";
+import { BrowserProvider } from 'ethers';
 
 export const useDecrypt = () => {
   const { instance, isInitialized } = useFhevm();
@@ -15,8 +16,9 @@ export const useDecrypt = () => {
   const [error, setError] = useState<string | null>(null);
 
   const decrypt = useCallback(
-    async (handle: bigint): Promise<bigint> => {
+    async (handle: string, contractAddress: string): Promise<bigint> => {
       console.log("🔓 Decrypt called with handle:", handle.toString());
+      console.log("📍 Contract address:", contractAddress);
 
       if (!isInitialized || !instance) {
         throw new Error("FHEVM not initialized");
@@ -27,11 +29,6 @@ export const useDecrypt = () => {
         throw new Error("Wallet not connected");
       }
 
-      if (handle === 0n) {
-        console.log("⚠️ Handle is 0, returning 0");
-        return 0n;
-      }
-
       setIsDecrypting(true);
       setError(null);
 
@@ -40,6 +37,7 @@ export const useDecrypt = () => {
         if (!wallet) throw new Error("No wallet found");
 
         const provider = await wallet.getEthereumProvider();
+        const ethersProvider = new BrowserProvider(provider);
 
         const walletClient = createWalletClient({
           account: userAddress as `0x${string}`,
@@ -48,45 +46,49 @@ export const useDecrypt = () => {
         });
 
         console.log("🔐 Generating keypair...");
-        const { publicKey, privateKey } = instance.generateKeypair();
+        const keypair = instance.generateKeypair();
 
-        console.log("📝 Creating EIP712 message...");
-        const eip712 = instance.createEIP712(publicKey, CONTRACT_ADDRESS);
+        const handleContractPairs = [
+          {
+            handle: handle,
+            contractAddress: contractAddress,
+          } as HandleContractPair,
+        ];
 
-        console.log("✍️ Requesting signature...");
-        const signature = await walletClient.signTypedData({
-          account: userAddress as `0x${string}`,
-          domain: {
-            name: eip712.domain.name,
-            version: eip712.domain.version,
-            chainId: eip712.domain.chainId,
-            verifyingContract: eip712.domain.verifyingContract as `0x${string}`,
-          },
-          types: eip712.types,
-          primaryType: "Reencrypt",
-          message: eip712.message,
-        });
+        const startTimeStamp = Math.floor(Date.now() / 1000).toString();
+        const durationDays = "10";
+        const contractAddresses = [contractAddress];
 
-        console.log("🔄 Reencrypting...");
-
-        const decryptedValue = await instance.reencrypt(
-          handle,
-          privateKey,
-          publicKey,
-          signature.replace("0x", ""),
-          CONTRACT_ADDRESS,
-          userAddress
+        const eip712 = instance.createEIP712(
+          keypair.publicKey,
+          contractAddresses,
+          startTimeStamp,
+          durationDays
         );
 
-        console.log("✅ Decryption successful:", decryptedValue);
+        (await ethersProvider.getSigner()).signTypedData
+        const signature = await (await ethersProvider.getSigner()).signTypedData(
+          eip712.domain,
+          {
+            UserDecryptRequestVerification: eip712.types.UserDecryptRequestVerification,
+          },
+          eip712.message
+        );
 
-        if (typeof decryptedValue === "string") {
-          return BigInt(decryptedValue);
-        } else if (typeof decryptedValue === "number") {
-          return BigInt(decryptedValue);
-        } else if (typeof decryptedValue === "bigint") {
-          return decryptedValue;
-        }
+        const result = await instance.userDecrypt(
+          handleContractPairs,
+          keypair.privateKey,
+          keypair.publicKey,
+          signature.replace("0x", ""),
+          contractAddresses,
+          wallet.address,
+          startTimeStamp,
+          durationDays
+        );
+
+        const decryptedValue = result[handle];
+
+        console.log("✅ Decryption successful:", decryptedValue);
 
         return BigInt(decryptedValue);
       } catch (err) {

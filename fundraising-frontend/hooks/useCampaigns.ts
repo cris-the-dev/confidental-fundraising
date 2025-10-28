@@ -52,8 +52,6 @@ export function useCampaigns() {
 
       const durationSeconds = BigInt(durationDays * 24 * 60 * 60);
 
-      console.log("Creating campaign with target (Wei):", targetWei.toString());
-
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FUNDRAISING_ABI,
@@ -500,6 +498,72 @@ export function useCampaigns() {
     }
   };
 
+  const getEncryptedBalanceAndLocked = async (): Promise<{
+    encryptedBalance: string;
+    encryptedLocked: string;
+  }> => {
+    try {
+      const client = await getClient();
+      const userAddress = wallets[0]?.address;
+
+      if (!userAddress) throw new Error("No wallet connected");
+
+      const result = await client.readContract({
+        address: VAULT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "getEncryptedBalanceAndLocked",
+      });
+
+      return {
+        encryptedBalance: result[0],
+        encryptedLocked: result[1]
+      };
+    } catch (error) {
+      console.error("Error fetching balance status:", error);
+      throw error;
+    }
+  };
+
+  const getEncryptedContribution = async (
+    campaignId: number,
+    userAddress: string
+  ): Promise<string> => {
+    try {
+      const client = await getClient();
+
+      const result = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "getEncryptedContribution",
+        args: [campaignId, userAddress as `0x${string}`],
+      });
+
+      return result as string;
+    } catch (error) {
+      console.error("Error fetching encrypted contribution:", error);
+      throw error;
+    }
+  };
+
+  const getEncryptedTotalRaised = async (
+    campaignId: number
+  ): Promise<string> => {
+    try {
+      const client = await getClient();
+
+      const result = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: FUNDRAISING_ABI,
+        functionName: "getEncryptedTotalRaised",
+        args: [campaignId],
+      });
+
+      return result as string;
+    } catch (error) {
+      console.error("Error fetching encrypted total raised:", error);
+      throw error;
+    }
+  };
 
   return {
     loading,
@@ -520,5 +584,8 @@ export function useCampaigns() {
     requestAvailableBalanceDecryption,
     getAvailableBalanceStatus,
     withdrawFromVault,
+    getEncryptedBalanceAndLocked,
+    getEncryptedContribution,
+    getEncryptedTotalRaised,
   };
 }

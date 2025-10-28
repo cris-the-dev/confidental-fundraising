@@ -510,18 +510,17 @@ export const VAULT_ABI = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "uint16",
-        name: "campaignId",
-        type: "uint16",
-      },
-    ],
-    name: "getLockedAmount",
+    inputs: [],
+    name: "getEncryptedBalanceAndLocked",
     outputs: [
       {
         internalType: "euint64",
-        name: "",
+        name: "balance",
+        type: "bytes32",
+      },
+      {
+        internalType: "euint64",
+        name: "locked",
         type: "bytes32",
       },
     ],
@@ -530,7 +529,7 @@ export const VAULT_ABI = [
   },
   {
     inputs: [],
-    name: "getTotalLocked",
+    name: "getEncryptedTotalLocked",
     outputs: [
       {
         internalType: "euint64",
