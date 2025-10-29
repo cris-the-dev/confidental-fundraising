@@ -51,7 +51,10 @@ export function FinalizeCampaignModal({
         try {
           const status = await getTotalRaisedStatus(campaignId);
 
-          if (status.status === DecryptStatus.DECRYPTED && status.totalRaised >= 0n) {
+          const currentTimeMillis = Date.now();
+          const statusCacheExp = status.cacheExpiry;
+
+          if (status.status === DecryptStatus.DECRYPTED && status.totalRaised >= 0n && statusCacheExp > BigInt(currentTimeMillis)) {
             clearInterval(interval);
             setPollingInterval(null);
             resolve(true);

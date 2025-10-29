@@ -27,7 +27,7 @@ export default function CampaignDetail() {
     checkHasClaimed,
     loading
   } = useCampaigns();
-  
+
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loadingCampaign, setLoadingCampaign] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,14 +45,14 @@ export default function CampaignDetail() {
 
   useEffect(() => {
     loadCampaign();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
 
   useEffect(() => {
     if (campaign && authenticated && user?.wallet?.address) {
       checkClaimStatus();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaign, authenticated, user?.wallet?.address]);
 
   const loadCampaign = async () => {
@@ -105,7 +105,7 @@ export default function CampaignDetail() {
       await cancelCampaign(campaignId);
       setActionSuccess('Campaign cancelled successfully! All funds have been unlocked.');
       await loadCampaign();
-    
+
     } catch (err: any) {
       setError(err.message || 'Failed to cancel campaign');
     }
@@ -135,8 +135,11 @@ export default function CampaignDetail() {
       setClaimingStep('Checking your contribution status...');
       const status = await getContributionStatus(campaignId, user.wallet.address);
 
+      const currentTimeMillis = Date.now();
+      const statusCacheExp = status.cacheExpiry;
+
       // Step 2: If not decrypted, request decryption
-      if (status.status === DecryptStatus.NONE || (status.status === DecryptStatus.DECRYPTED && status.contribution === 0n)) {
+      if (status.status === DecryptStatus.NONE || (status.status === DecryptStatus.DECRYPTED && (status.contribution === 0n || statusCacheExp <= BigInt(currentTimeMillis)))) {
         setClaimingStep('Your contribution needs to be decrypted first...');
         await requestMyContributionDecryption(campaignId);
 
@@ -354,8 +357,8 @@ export default function CampaignDetail() {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="bg-purple-50 rounded-lg p-4">
                   <p className="text-sm text-purple-800">
-                    🔒 <strong>Privacy Protected:</strong> Individual contribution 
-                    amounts are encrypted using FHEVM. Only contributors can see 
+                    🔒 <strong>Privacy Protected:</strong> Individual contribution
+                    amounts are encrypted using FHEVM. Only contributors can see
                     their own contribution amounts.
                   </p>
                 </div>
@@ -409,7 +412,7 @@ export default function CampaignDetail() {
                 {canFinalize && (
                   <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-sm text-blue-800">
-                      ⚠️ <strong>Before finalizing:</strong> Make sure you have decrypted the total raised amount above. 
+                      ⚠️ <strong>Before finalizing:</strong> Make sure you have decrypted the total raised amount above.
                       You will need to provide token name and symbol when finalizing.
                     </p>
                   </div>

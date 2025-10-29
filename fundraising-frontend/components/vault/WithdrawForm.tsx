@@ -45,7 +45,10 @@ export function WithdrawForm({ availableBalance, onSuccess }: Props) {
         try {
           const status = await getAvailableBalanceStatus();
 
-          if (status.status === DecryptStatus.DECRYPTED && status.availableAmount >= 0n) {
+          const currentTimeMillis = Date.now();
+          const statusCacheExp = status.cacheExpiry;
+
+          if (status.status === DecryptStatus.DECRYPTED && status.availableAmount >= 0n && statusCacheExp > BigInt(currentTimeMillis)) {
             clearInterval(interval);
             setPollingInterval(null);
             resolve(true);
