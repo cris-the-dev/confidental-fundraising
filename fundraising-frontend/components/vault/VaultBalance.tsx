@@ -62,9 +62,9 @@ export function VaultBalance() {
   const available = balance !== null && locked !== null ? balance - locked : null;
 
   return (
-    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
           💎 Your Vault Balance
         </h3>
 
@@ -133,18 +133,18 @@ export function VaultBalance() {
           </div>
 
           {/* Total Balance */}
-          <div className="bg-white rounded-lg p-5 border border-green-300">
+          <div className="bg-white rounded-lg p-4 sm:p-5 border border-green-300">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-gray-600">Total Balance</span>
+              <span className="text-xs sm:text-sm text-gray-600">Total Balance</span>
               <span className="text-xs text-gray-500">🏦</span>
             </div>
             <div className="flex items-baseline justify-between">
-              <span className="text-3xl font-bold text-gray-900">
+              <span className="text-2xl sm:text-3xl font-bold text-gray-900">
                 {formatEther(balance)}
               </span>
-              <span className="text-sm text-gray-700 font-medium">ETH</span>
+              <span className="text-xs sm:text-sm text-gray-700 font-medium">ETH</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-1 break-all">
               {balance.toString()} Wei
             </p>
           </div>
@@ -153,14 +153,14 @@ export function VaultBalance() {
           {locked !== null && locked > 0n && (
             <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-orange-800">Locked in Campaigns</span>
+                <span className="text-xs sm:text-sm text-orange-800">Locked in Campaigns</span>
                 <span className="text-xs">🔒</span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-orange-900">
+                <span className="text-xl sm:text-2xl font-bold text-orange-900">
                   {formatEther(locked)}
                 </span>
-                <span className="text-sm text-orange-700 font-medium">ETH</span>
+                <span className="text-xs sm:text-sm text-orange-700 font-medium">ETH</span>
               </div>
               <p className="text-xs text-orange-600 mt-2">
                 These funds are locked in active campaigns
@@ -170,18 +170,18 @@ export function VaultBalance() {
 
           {/* Available to Withdraw */}
           {available !== null && (
-            <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg p-5 border-2 border-green-400">
+            <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg p-4 sm:p-5 border-2 border-green-400">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-green-800 font-medium">
+                <span className="text-xs sm:text-sm text-green-800 font-medium">
                   Available to Withdraw
                 </span>
                 <span className="text-xs">💰</span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-bold text-green-900">
+                <span className="text-2xl sm:text-3xl font-bold text-green-900">
                   {formatEther(available)}
                 </span>
-                <span className="text-sm text-green-700 font-medium">ETH</span>
+                <span className="text-xs sm:text-sm text-green-700 font-medium">ETH</span>
               </div>
               <p className="text-xs text-green-700 mt-2">
                 {available > 0n

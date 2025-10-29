@@ -275,40 +275,40 @@ export default function CampaignDetail() {
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <button
           onClick={() => router.push('/')}
-          className="mb-6 text-purple-600 hover:text-purple-700 font-medium flex items-center"
+          className="mb-4 sm:mb-6 text-purple-600 hover:text-purple-700 font-medium flex items-center text-sm sm:text-base"
         >
           ← Back to Campaigns
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Campaign Header */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <div className="flex justify-between items-start mb-4">
-                <h1 className="text-3xl font-bold text-gray-900">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {campaign.title}
                 </h1>
                 {campaign.cancelled && (
-                  <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
                     Cancelled
                   </span>
                 )}
                 {campaign.finalized && !campaign.cancelled && (
-                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
                     Finalized
                   </span>
                 )}
                 {!campaign.finalized && !campaign.cancelled && isExpired && (
-                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
                     Ended
                   </span>
                 )}
                 {!campaign.finalized && !campaign.cancelled && !isExpired && (
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
                     Active
                   </span>
                 )}
@@ -329,26 +329,26 @@ export default function CampaignDetail() {
             </div>
 
             {/* Campaign Stats */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">
                 Campaign Details
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <span className="text-sm text-gray-500 block mb-1">
+                  <span className="text-xs sm:text-sm text-gray-500 block mb-1">
                     Target Amount
                   </span>
-                  <span className="text-2xl font-bold text-purple-600">
+                  <span className="text-xl sm:text-2xl font-bold text-purple-600">
                     {targetInEth} ETH
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-sm text-gray-500 block mb-1">
+                  <span className="text-xs sm:text-sm text-gray-500 block mb-1">
                     Deadline
                   </span>
-                  <span className="text-lg font-medium text-gray-900">
+                  <span className="text-base sm:text-lg font-medium text-gray-900">
                     {deadline.toLocaleDateString()}
                   </span>
                 </div>
@@ -367,8 +367,8 @@ export default function CampaignDetail() {
 
             {/* Encrypted Data Section */}
             {authenticated && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
                   🔐 Encrypted Data
                 </h2>
                 <div className="space-y-4">
@@ -384,8 +384,8 @@ export default function CampaignDetail() {
 
             {/* Token Balance Section */}
             {authenticated && campaign.finalized && campaign.tokenAddress && campaign.tokenAddress !== '0x0000000000000000000000000000000000000000' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
                   💰 Campaign Tokens
                 </h2>
                 <CampaignTokenBalance
@@ -398,8 +398,8 @@ export default function CampaignDetail() {
 
             {/* Owner Actions */}
             {isOwner && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
                   Campaign Management
                 </h2>
 
@@ -460,8 +460,8 @@ export default function CampaignDetail() {
             )}
 
             {!canContribute && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">
                   Campaign Status
                 </h3>
                 <p className="text-gray-600 text-sm">

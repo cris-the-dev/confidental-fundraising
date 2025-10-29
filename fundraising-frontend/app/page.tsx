@@ -8,17 +8,17 @@ export default function Home() {
   const { authenticated } = usePrivy();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       {/* Hero Section */}
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">
+      <div className="text-center mb-8 sm:mb-12">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">
           Confidential Fundraising
         </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto" style={{ whiteSpace: 'pre-line' }}>
+        <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 max-w-3xl mx-auto px-4" style={{ whiteSpace: 'pre-line' }}>
           Create and support fundraising campaigns with complete privacy.
           Your contribution amounts remain encrypted on-chain.
         </p>
-        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto" style={{ whiteSpace: 'pre-line' }}>
+        <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto px-4" style={{ whiteSpace: 'pre-line' }}>
           Powered by {' '}
           <a
             href="https://www.zama.ai/"
@@ -29,10 +29,10 @@ export default function Home() {
             Zama FHEVM
           </a>
         </p>
-        
+
         {authenticated && (
           <Link href="/create">
-            <button className="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 transition font-medium text-lg">
+            <button className="bg-purple-600 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg hover:bg-purple-700 transition font-medium text-base sm:text-lg">
               Create Campaign
             </button>
           </Link>
@@ -77,12 +77,12 @@ export default function Home() {
 
       {/* Campaigns Section */}
       <div>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Active Campaigns
           </h2>
         </div>
-        
+
         <CampaignList />
       </div>
     </div>

@@ -56,8 +56,8 @@ export function DepositForm({ onSuccess }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 className="text-xl font-bold text-gray-900 mb-4">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
         💳 Deposit to Vault
       </h3>
 

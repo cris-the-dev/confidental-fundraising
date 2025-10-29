@@ -1,7 +1,7 @@
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-200 mt-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <footer className="bg-white border-t border-gray-200 mt-8 sm:mt-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="text-center">
           <p className="text-gray-600 text-sm mb-2">
             🔒 Powered by{' '}
@@ -14,10 +14,10 @@ export default function Footer() {
               Zama FHEVM
             </a>
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 px-4">
             All contribution amounts are encrypted on-chain using Fully Homomorphic Encryption
           </p>
-          <div className="mt-4 flex justify-center space-x-6 text-xs text-gray-500">
+          <div className="mt-4 flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-0 sm:space-x-6 text-xs text-gray-500">
             <a
               href="https://github.com/cris-the-dev/confidental-fundraising/blob/main/README.md"
               target="_blank"
@@ -26,7 +26,7 @@ export default function Footer() {
             >
               Documentation
             </a>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <a
               href="https://github.com/cris-the-dev/confidental-fundraising"
               target="_blank"
@@ -35,8 +35,8 @@ export default function Footer() {
             >
               GitHub
             </a>
-            <span>•</span>
-            <span>
+            <span className="hidden sm:inline">•</span>
+            <span className="text-center">
               Built with ❤️ by{' '}
               <a
                 href="https://x.com/cris_thedev"
