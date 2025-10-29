@@ -7,8 +7,8 @@ Author: [@cris_thedev](https://x.com/cris_thedev)
 
 | Contract Name | Network | Contract Address
 |----------|-------------|--------|
-| ConfidentialFundraising | Sepolia | [`0xAEF00d99124f3c96720Ac6047B5ACE3b677e5E26`](https://sepolia.etherscan.io/address/0xAEF00d99124f3c96720Ac6047B5ACE3b677e5E26) |
-| ShareVault | Sepolia | [`0x14118D98a73CD7905d71eB4aD12dACa20cF67999`](https://sepolia.etherscan.io/address/0x14118D98a73CD7905d71eB4aD12dACa20cF67999) |
+| ConfidentialFundraising | Sepolia | [`0x203db914535Dd91A10cC934FC813C847d25B488e`](https://sepolia.etherscan.io/address/0x203db914535Dd91A10cC934FC813C847d25B488e) |
+| ShareVault | Sepolia | [`0xC99D0fF63B8b86F227F08F37b40a563Ccc23c65b`](https://sepolia.etherscan.io/address/0xC99D0fF63B8b86F227F08F37b40a563Ccc23c65b) |
 ---
 
 ## 📖 Concept
