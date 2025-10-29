@@ -139,7 +139,7 @@ Ensure you have the following installed:
 #### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:cris-the-dev/confidential-fundraising.git
 cd confidential-fundraising
 ```
 
