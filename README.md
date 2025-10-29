@@ -425,18 +425,6 @@ This platform uses **FHEVM (Fully Homomorphic Encryption)** to ensure:
 - Mathematical operations (summing contributions) work on encrypted data
 - Zero-knowledge proofs validate encrypted values without revealing them
 
-**Security Audits**: Smart contracts should be professionally audited before mainnet deployment.
+**Security Audits**: TBD
 
----
-
-## 👨‍💻 Author
-
-**cristhedev**
-
-- 🐙 GitHub: [@cris-the-dev](https://github.com/cris-the-dev)
-- 📧 Email: tiennln.work@gmail.com
-- 🔗 Repository: [confidental-fundraising](https://github.com/cris-the-dev/confidental-fundraising)
-
----
-
-Built with ❤️ by [cristhedev](https://github.com/cris-the-dev) using Zama's FHEVM technology
+Built with ❤️ by [@cris_thedev](https://x.com/cris_thedev) using Zama's FHEVM technology

@@ -14,9 +14,20 @@ export default function Home() {
         <h1 className="text-5xl font-bold text-gray-900 mb-4">
           Confidential Fundraising
         </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-          Create and support fundraising campaigns with complete privacy. 
-          Powered by FHEVM, your contribution amounts remain encrypted on-chain.
+        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto" style={{ whiteSpace: 'pre-line' }}>
+          Create and support fundraising campaigns with complete privacy.
+          Your contribution amounts remain encrypted on-chain.
+        </p>
+        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto" style={{ whiteSpace: 'pre-line' }}>
+          Powered by {' '}
+          <a
+            href="https://www.zama.ai/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-purple-600 hover:text-purple-700 font-medium transition"
+          >
+            Zama FHEVM
+          </a>
         </p>
         
         {authenticated && (

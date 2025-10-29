@@ -12,6 +12,8 @@ export default function PrivyProvider({ children }: { children: React.ReactNode 
           theme: 'light',
           accentColor: '#9333ea',
           logo: '/logo.png',
+          landingHeader: "Confidential Fundraising",
+          loginMessage: "Start funding confidentially with your wallet"
         },
         loginMethods: ['wallet'],
         embeddedWallets: {
