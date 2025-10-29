@@ -94,8 +94,11 @@ export function WithdrawForm({ availableBalance, onSuccess }: Props) {
       setWithdrawingStep('Checking available balance status...');
       const balanceStatus = await getAvailableBalanceStatus();
 
+      const currentTimeMillis = Date.now();
+      const statusCacheExp = balanceStatus.cacheExpiry;
+
       // Step 2: If not decrypted, request decryption
-      if (balanceStatus.status === DecryptStatus.NONE || (balanceStatus.status === DecryptStatus.DECRYPTED && balanceStatus.availableAmount < 0n)) {
+      if (balanceStatus.status === DecryptStatus.NONE || (balanceStatus.status === DecryptStatus.DECRYPTED && (balanceStatus.availableAmount < 0n || statusCacheExp <= BigInt(currentTimeMillis)))) {
         setWithdrawingStep('Available balance needs to be decrypted first...');
         await requestAvailableBalanceDecryption();
 
