@@ -146,7 +146,7 @@ export default function ContributeForm({ campaignId, onSuccess }: Props) {
       <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">
-            💰 Your Vault Balance (Optional)
+            💰 Your Vault Balance
           </span>
           {availableBalance !== null && (
             <button

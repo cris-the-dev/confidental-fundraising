@@ -79,7 +79,7 @@ const config: HardhatUserConfig = {
     target: "ethers-v6",
   },
   
-  // Gas reporter configuration (optional)
+  // Gas reporter configuration
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true",
     currency: "USD",
