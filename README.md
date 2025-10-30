@@ -10,6 +10,8 @@ Author: [@cris_thedev](https://x.com/cris_thedev)
 | ConfidentialFundraising | Sepolia | [`0x203db914535Dd91A10cC934FC813C847d25B488e`](https://sepolia.etherscan.io/address/0x203db914535Dd91A10cC934FC813C847d25B488e) |
 | ShareVault | Sepolia | [`0xC99D0fF63B8b86F227F08F37b40a563Ccc23c65b`](https://sepolia.etherscan.io/address/0xC99D0fF63B8b86F227F08F37b40a563Ccc23c65b) |
 ---
+Demo Video: [Loom demo video](https://www.loom.com/share/79e14fa3ebcf46188041079983966130)
+---
 
 ## 📖 Concept
 
